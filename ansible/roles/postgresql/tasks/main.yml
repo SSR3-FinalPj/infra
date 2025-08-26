@@ -1,0 +1,12 @@
+---
+# roles/postgresql/tasks/main.yml
+
+- name: Deploy PostgreSQL
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'postgresql.yaml') | from_yaml_all }}"
+    namespace: dev-system
+
+- name: Setup Airflow database and user
+  include_tasks: setup-airflow.yml
+  when: setup_airflow_db | default(true)

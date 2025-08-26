@@ -1,0 +1,84 @@
+---
+# roles/prometheus/tasks/main.yml
+
+- name: Check if Helm is installed
+  command: helm version --short
+  register: helm_version
+  failed_when: false
+  changed_when: false
+
+- name: Ensure Helm is available
+  fail:
+    msg: "Helm is not installed or not accessible. Please install Helm first."
+  when: helm_version.rc != 0
+
+- name: Add Prometheus Community Helm repository
+  kubernetes.core.helm_repository:
+    name: prometheus-community
+    repo_url: https://prometheus-community.github.io/helm-charts
+    state: present
+  register: helm_repo_result
+
+- name: Update Helm repositories
+  command: helm repo update
+  when: helm_repo_result.changed
+  changed_when: true
+
+- name: Check if monitoring stack is already installed
+  command: helm list -n dev-system -f monitoring
+  register: helm_list_result
+  changed_when: false
+  failed_when: false
+
+- name: Create dev-system namespace if not exists
+  kubernetes.core.k8s:
+    name: dev-system
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Remove existing standalone Grafana (if exists)
+  kubernetes.core.k8s:
+    api_version: apps/v1
+    kind: Deployment
+    name: grafana
+    namespace: dev-system
+    state: absent
+  when: "'monitoring' not in helm_list_result.stdout"
+
+- name: Remove existing Grafana service (if exists)
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Service
+    name: grafana
+    namespace: dev-system
+    state: absent
+  when: "'monitoring' not in helm_list_result.stdout"
+
+- name: Deploy Prometheus Stack using Helm
+  kubernetes.core.helm:
+    name: monitoring
+    chart_ref: prometheus-community/kube-prometheus-stack
+    release_namespace: dev-system
+    create_namespace: true
+    values_files:
+      - "{{ role_path }}/templates/values.yaml"
+    wait: true
+    wait_timeout: 600s
+    atomic: true
+    state: present
+
+- name: Deploy custom ServiceMonitors for existing services
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/servicemonitors.yaml'
+    namespace: dev-system
+
+- name: Display monitoring access information
+  debug:
+    msg:
+      - "Prometheus Stack deployed successfully!"
+      - "Grafana will be available through ALB Internal Ingress"
+      - "Prometheus server: http://monitoring-kube-prometheus-prometheus.dev-system:9090"
+      - "Grafana: http://monitoring-grafana.dev-system:80"
+      - "AlertManager: http://monitoring-kube-prometheus-alertmanager.dev-system:9093"

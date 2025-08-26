@@ -1,0 +1,53 @@
+---
+# roles/alb-controller/tasks/main.yml
+
+- name: Add the Jetstack Helm repository
+  kubernetes.core.helm_repository:
+    name: jetstack
+    repo_url: 'https://charts.jetstack.io'
+
+- name: Install Cert-Manager Helm chart
+  kubernetes.core.helm:
+    name: cert-manager
+    chart_ref: jetstack/cert-manager
+    release_namespace: cert-manager
+    create_namespace: true
+    chart_version: 'v1.18.2'
+    values:
+      installCRDs: true
+
+- name: Add the EKS Helm chart repository
+  kubernetes.core.helm_repository:
+    name: aws
+    repo_url: 'https://aws.github.io/eks-charts'
+
+- name: Delete existing IngressClass if it exists
+  kubernetes.core.k8s:
+    state: absent
+    kind: IngressClass
+    name: alb
+  ignore_errors: true
+
+- name: Deploy AWS Load Balancer Controller Helm chart
+  kubernetes.core.helm:
+    name: aws-load-balancer-controller
+    chart_ref: aws/aws-load-balancer-controller
+    release_namespace: kube-system
+    values: "{{ lookup('template', 'alb-controller-values.yaml.j2') | from_yaml }}"
+
+- name: Apply IngressClass
+  kubernetes.core.k8s:
+    state: present
+    template: ingress-class.yaml.j2
+
+
+- name: Wait for ALB Controller deployment to be available
+  kubernetes.core.k8s_info:
+    api_version: apps/v1
+    kind: Deployment
+    name: aws-load-balancer-controller
+    namespace: kube-system
+  register: alb_deployment_status
+  until: 'alb_deployment_status.resources is defined and alb_deployment_status.resources | length > 0 and alb_deployment_status.resources[0].status.availableReplicas is defined and alb_deployment_status.resources[0].status.availableReplicas > 0'
+  retries: 30
+  delay: 10

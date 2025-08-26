@@ -1,0 +1,111 @@
+---
+# ServiceMonitors for existing infrastructure services
+# These enable automatic metric collection by Prometheus
+
+## PostgreSQL ServiceMonitor (requires postgres_exporter sidecar)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgresql-monitor
+  namespace: dev-system
+  labels:
+    app: postgresql
+    component: database
+spec:
+  selector:
+    matchLabels:
+      app: postgresql
+  endpoints:
+    - port: postgres-exporter
+      interval: 30s
+      path: /metrics
+---
+## Redis ServiceMonitor (requires redis_exporter sidecar)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: redis-monitor
+  namespace: dev-system
+  labels:
+    app: redis
+    component: cache
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  endpoints:
+    - port: redis-exporter
+      interval: 30s
+      path: /metrics
+---
+## Kafka ServiceMonitor (for JMX metrics)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kafka-monitor
+  namespace: dev-system
+  labels:
+    app: kafka
+    component: streaming
+spec:
+  selector:
+    matchLabels:
+      app: kafka
+  endpoints:
+    - port: jmx-metrics
+      interval: 30s
+      path: /metrics
+---
+## Elasticsearch ServiceMonitor (requires elasticsearch_exporter)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: elasticsearch-monitor
+  namespace: dev-system
+  labels:
+    app: elasticsearch
+    component: search
+spec:
+  selector:
+    matchLabels:
+      component: elasticsearch
+  endpoints:
+    - port: es-exporter
+      interval: 30s
+      path: /metrics
+---
+## Airflow ServiceMonitor (if metrics are exposed)
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: airflow-monitor
+  namespace: dev-system
+  labels:
+    app: airflow
+    component: workflow
+spec:
+  selector:
+    matchLabels:
+      app: airflow
+  endpoints:
+    - port: airflow-metrics
+      interval: 30s
+      path: /metrics
+---
+## Generic Kubernetes Services Monitor
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: kubernetes-services-monitor
+  namespace: dev-system
+  labels:
+    app: kubernetes-services
+spec:
+  selector:
+    matchExpressions:
+      - key: prometheus.io/scrape
+        operator: Exists
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics

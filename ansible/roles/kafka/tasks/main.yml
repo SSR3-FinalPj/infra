@@ -1,0 +1,38 @@
+---
+# roles/kafka/tasks/main.yml
+
+- name: Delete existing Kafka resources to ensure re-application
+  kubernetes.core.k8s:
+    state: absent
+    src: '{{ item }}'
+    namespace: dev-system
+  loop:
+    - 'templates/kafka-ui.yaml'
+    - 'templates/kafka.yaml'
+    - 'templates/kafka-cs.yaml'
+    - 'templates/kafka-pdb.yaml'
+  ignore_errors: true
+
+- name: Deploy Kafka PodDisruptionBudget
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/kafka-pdb.yaml'
+    namespace: dev-system
+
+- name: Deploy Kafka Client Service
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/kafka-cs.yaml'
+    namespace: dev-system
+
+- name: Deploy Kafka StatefulSet
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/kafka.yaml'
+    namespace: dev-system
+
+- name: Deploy Kafka UI
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/kafka-ui.yaml'
+    namespace: dev-system

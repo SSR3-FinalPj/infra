@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: redis-sentinel
+spec:
+  replicas: 2
+  selector:
+    redis-sentinel: 'true'
+  template:
+    metadata:
+      labels:
+        name: redis-sentinel
+        redis-sentinel: 'true'
+        role: sentinel
+    spec:
+      #      hostAliases:
+      #      - ip: "10.250.238.61"
+      #        hostnames:
+      #        - "registry.secuiot"
+      #      - ip: "10.250.238.64"
+      #        hostnames:
+      #        - "db.internal.secudiumiot.com"
+      #      nodeSelector:
+      #        dsaas-redis-sentinel: "true"
+      containers:
+        - name: sentinel
+          image: redis:8.2.1-alpine
+          env:
+            - name: SENTINEL
+              value: 'true'
+            - name: TZ
+              value: Asia/Seoul
+          ports:
+            - containerPort: 26379
+          volumeMounts:
+            #          - name: secuiotlogs
+            #            mountPath: /secuiot_logs
+            - name: timezone
+              mountPath: /etc/localtime
+              readOnly: true
+      volumes:
+        #        - hostPath:
+        #            path: /secuIOT/secuiot_logs
+        #          name: secuiotlogs
+        - hostPath:
+            path: /etc/localtime
+          name: timezone

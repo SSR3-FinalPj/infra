@@ -1,0 +1,51 @@
+# ==============================================
+# Ansible Vault Template 
+# ==============================================
+# 이 파일은 Ansible Vault로 암호화된 변수들의 템플릿입니다.
+#
+# 사용법:
+# 1. 이 파일을 vault.yml로 복사: cp vault.yml.example vault.yml
+# 2. vault.yml 파일에서 실제 값들로 수정
+# 3. Ansible Vault로 암호화: ansible-vault encrypt vault.yml
+# 4. 플레이북 실행 시 vault 패스워드 제공: --ask-vault-pass 또는 --vault-password-file
+# ==============================================
+
+# ==============================================
+# Database Credentials (High Security)
+# ==============================================
+vault_postgres_password: "your_very_secure_postgres_password"
+vault_mysql_root_password: "your_very_secure_mysql_password"  
+vault_airflow_password: "your_very_secure_airflow_password"
+vault_redmine_db_password: "your_very_secure_redmine_db_password"
+vault_redmine_secret_key: "your_very_long_and_secure_secret_key_base"
+
+# ==============================================
+# API Keys & External Service Credentials (High Security)
+# ==============================================
+vault_youtube_api_key: "your_real_youtube_api_key_here"
+vault_seoul_api_key: "your_real_seoul_api_key_here"
+
+# Reddit API Credentials
+vault_reddit_client_id: "your_real_reddit_client_id"
+vault_reddit_client_secret: "your_real_reddit_client_secret"  
+vault_reddit_username: "your_real_reddit_username"
+vault_reddit_password: "your_real_reddit_password"
+vault_reddit_user_agent: "your_custom_reddit_user_agent"
+
+# ==============================================
+# 참고사항
+# ==============================================
+# 1. 이 파일은 암호화 전까지는 절대 Git에 커밋하지 마세요
+# 2. 암호화 후에는 팀 정책에 따라 Git에 포함할 수 있습니다
+# 3. Vault 패스워드는 안전한 곳에 별도 보관하세요
+# 4. 실제 값 입력 시 따옴표 안의 텍스트만 변경하세요
+# 5. 변수명(vault_로 시작)은 변경하지 마세요
+
+# ==============================================
+# Airflow Security Keys (High Security)
+# ==============================================
+# These keys are essential for Airflow to run securely.
+# Generate a new Fernet key with: openssl rand -base64 32
+# Generate a new Webserver key with: openssl rand -hex 32
+vault_fernet_key: "your_generated_fernet_key_here"
+vault_webserver_secret_key: "your_generated_webserver_secret_key_here"

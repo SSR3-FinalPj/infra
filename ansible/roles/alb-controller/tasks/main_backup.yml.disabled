@@ -1,0 +1,71 @@
+---
+# roles/alb-controller/tasks/main.yml
+
+- name: Install Cert-Manager for ALB Controller
+  ansible.builtin.command: >
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.15.1/cert-manager.yaml
+  changed_when: true
+
+- name: Wait for Cert-Manager webhook to be ready
+  community.kubernetes.k8s_info:
+    kind: Deployment
+    name: cert-manager-webhook
+    namespace: cert-manager
+  register: cert_manager_status
+  until: cert_manager_status.resources is defined and cert_manager_status.resources and cert_manager_status.resources[0].status.availableReplicas is defined and cert_manager_status.resources[0].status.availableReplicas > 0
+  retries: 30
+  delay: 10
+
+- name: Download ALB Controller manifest
+  ansible.builtin.get_url:
+    url: https://github.com/kubernetes-sigs/aws-load-balancer-controller/releases/download/v2.7.2/v2_7_2_full.yaml
+    dest: /tmp/v2_7_2_full.yaml
+    mode: '0644'
+
+- name: Inject cluster-name into ALB Controller manifest
+  ansible.builtin.replace:
+    path: /tmp/v2_7_2_full.yaml
+    regexp: 'your-cluster-name'
+    replace: '{{ eks_cluster_name.value }}'
+
+- name: Inject vpc-id into ALB Controller manifest
+  ansible.builtin.lineinfile:
+    path: /tmp/v2_7_2_full.yaml
+    insertafter: '        - --cluster-name={{ eks_cluster_name.value }}'
+    line: '        - --aws-vpc-id={{ vpc_id.value }}'
+
+- name: Inject region into ALB Controller manifest
+  ansible.builtin.lineinfile:
+    path: /tmp/v2_7_2_full.yaml
+    insertafter: '        - --aws-vpc-id={{ vpc_id.value }}'
+    line: '        - --aws-region={{ aws_region.value }}'
+
+- name: Install AWS Load Balancer Controller from local manifest
+  ansible.builtin.command: >
+    kubectl apply -f /tmp/v2_7_2_full.yaml
+  changed_when: true
+
+- name: Wait for ALB Controller deployment to be available
+  community.kubernetes.k8s_info:
+    kind: Deployment
+    name: aws-load-balancer-controller
+    namespace: kube-system
+  register: alb_deployment_status
+  until: alb_deployment_status.resources is defined and alb_deployment_status.resources and alb_deployment_status.resources[0].status.availableReplicas is defined and cert_manager_status.resources[0].status.availableReplicas > 0
+  retries: 30
+  delay: 10
+
+- name: Patch ALB Controller ServiceAccount with IAM Role ARN
+  community.kubernetes.k8s:
+    state: patched
+    kind: ServiceAccount
+    name: aws-load-balancer-controller
+    namespace: kube-system
+    definition:
+      metadata:
+        annotations:
+          "eks.amazonaws.com/role-arn": "{{ alb_controller_role_arn.value }}"
+  register: patch_result
+  until: patch_result is not failed
+  retries: 5
+  delay: 10

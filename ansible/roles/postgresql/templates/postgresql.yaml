@@ -1,0 +1,101 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init-script
+  namespace: dev-system
+data:
+  01-init-airflow.sql: |
+    -- PostgreSQL 초기화 스크립트 (Idempotent)
+    -- Airflow를 위한 데이터베이스 및 사용자 생성
+
+    -- Airflow 사용자가 존재하지 않을 경우에만 생성
+    DO
+    $$
+    BEGIN
+       IF NOT EXISTS (
+          SELECT FROM pg_catalog.pg_roles
+          WHERE  rolname = 'airflow') THEN
+
+          CREATE ROLE airflow LOGIN PASSWORD '{{ vault_airflow_password }}';
+          RAISE NOTICE 'Created airflow user';
+       ELSE
+          RAISE NOTICE 'User airflow already exists, skipping creation';
+       END IF;
+    END
+    $$;
+
+    -- Airflow 데이터베이스가 존재하지 않을 경우에만 생성  
+    SELECT 'CREATE DATABASE airflow OWNER airflow'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'airflow')\gexec
+
+    -- Airflow 사용자에게 권한 부여 (항상 실행 - 권한은 중복 부여해도 문제없음)
+    GRANT ALL PRIVILEGES ON DATABASE airflow TO airflow;
+
+    -- 완료 메시지
+    SELECT 'Airflow database and user setup completed successfully!' as status;
+
+---
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: postgresql
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      containers:
+        - name: postgresql
+          image: postgres:13.22-alpine
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: "{{ vault_postgres_password }}"
+            - name: POSTGRES_DB
+              value: postgres
+            - name: PGDATA
+              value: /var/lib/postgresql/data
+            - name: TZ
+              value: Asia/Seoul
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres
+              mountPath: /var/lib/postgresql/data
+            - name: postgres-init-scripts
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      #          - name: timezone
+      #            mountPath: /etc/localtime
+      #            readOnly: true
+      volumes:
+        - name: postgres
+          persistentVolumeClaim:
+            claimName: postgre-data-pvc
+        - name: postgres-init-scripts
+          configMap:
+            name: postgres-init-script
+      #        - hostPath:
+      #            path: /etc/localtime
+      #          name: timezone
+      nodeSelector:
+        dspDBType: 'postgre'
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    component: postgres
+  name: postgres
+spec:
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+      name: pgql
+  selector:
+    app: postgresql
+  type: ClusterIP

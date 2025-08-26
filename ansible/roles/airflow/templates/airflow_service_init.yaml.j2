@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: airflow-service-init
+  namespace: dev-system
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: airflow-service-sa
+      containers:
+      - name: airflow-init
+        image: 805400277714.dkr.ecr.us-east-2.amazonaws.com/airflow:1.0.0
+        imagePullPolicy: Always
+        command: [ "sh", "-c" ]
+        args:
+          - |
+            set -ex
+            echo "--- Initializing Airflow DB... ---"
+            airflow db init
+            echo "--- DB Initialized. ---"
+            echo "--- Creating admin user... ---"
+            airflow users create -u service_admin -p AdminPass123 -f ServiceAdmin -l User -r Admin -e service_admin@example.com
+            echo "--- Init script finished. ---"
+
+        volumeMounts:
+          - name: dags-volume
+            mountPath: /opt/airflow/dags
+        env:
+          - name: AIRFLOW__CORE__EXECUTOR
+            value: SequentialExecutor
+          - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+            valueFrom:
+              secretKeyRef:
+                name: airflow-db-connection
+                key: connection
+          - name: AIRFLOW__CORE__FERNET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-service-secrets
+                key: FERNET_KEY
+          - name: AIRFLOW__WEBSERVER__SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: airflow-service-secrets
+                key: WEBSERVER_SECRET_KEY
+      volumes:
+        - name: dags-volume
+          persistentVolumeClaim:
+            claimName: dags-pvc

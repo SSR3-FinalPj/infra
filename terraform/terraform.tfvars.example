@@ -1,0 +1,60 @@
+# ==============================================
+# Terraform Variables Template
+# ==============================================
+# 이 파일을 복사하여 terraform.tfvars로 이름을 변경하고
+# 실제 값으로 수정한 후 사용하세요.
+#
+# 사용법: 
+# 1. cp terraform.tfvars.example terraform.tfvars
+# 2. terraform.tfvars 파일을 편집하여 실제 값 입력
+# 3. terraform apply 실행
+# ==============================================
+
+# ==============================================
+# AWS Infrastructure 설정
+# ==============================================
+
+# AWS 리전 (예: us-east-2, ap-northeast-2)
+aws_region = "us-east-2"
+
+# EKS 클러스터 이름
+cluster_name = "my-eks-cluster"
+
+# Kubernetes 버전 (예: "1.33")
+k8s_version = "1.33"
+
+# ==============================================
+# EKS Node Group 설정
+# ==============================================
+
+# EC2 인스턴스 타입
+node_instance_type = "t3.xlarge"
+
+# 노드 스케일링 설정
+desired_node_capacity = 3
+max_node_capacity = 3
+min_node_capacity = 1
+
+# ==============================================
+# IAM 접근 권한 설정
+# ==============================================
+
+# EKS 클러스터에 Admin 권한을 부여할 IAM 사용자 ARN
+# ⚠️ 중요: 실제 AWS 계정 ID와 사용자명으로 변경하세요
+target_iam_user_arn = "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:user/YOUR_USERNAME"
+
+# EKS 클러스터 접근 권한을 부여할 IAM 주체들의 ARN 목록
+# ⚠️ 중요: 실제 AWS 계정 ID와 사용자명들로 변경하세요
+target_iam_principals_arn = [
+  "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:user/YOUR_USERNAME"
+  # "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:user/additional_user1",
+  # "arn:aws:iam::YOUR_AWS_ACCOUNT_ID:user/additional_user2",
+]
+
+# ==============================================
+# 참고사항
+# ==============================================
+# 1. YOUR_AWS_ACCOUNT_ID: 실제 AWS 계정 ID (12자리 숫자)
+# 2. YOUR_USERNAME: 실제 IAM 사용자명
+# 3. 추가 사용자가 있다면 target_iam_principals_arn 목록에 추가
+# 4. 이 파일은 Git에 커밋하지 마세요 (.gitignore에 등록됨)
