@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: alb
   rules:
-    - host: ssr-portainer.kro.kr
+    - host: portainer.{{ base_domain }}
       http:
         paths:
           - path: /
@@ -21,7 +21,7 @@ spec:
                 name: portainer
                 port:
                   number: 80
-    - host: ssr-airflow.kro.kr
+    - host: airflow.{{ base_domain }}
       http:
         paths:
           - path: /
@@ -31,7 +31,7 @@ spec:
                 name: airflow-service-webserver
                 port:
                   number: 80
-    - host: ssr-kafka.kro.kr
+    - host: kafka.{{ base_domain }}
       http:
         paths:
           - path: /
@@ -41,7 +41,7 @@ spec:
                 name: kafka-ui-svc
                 port:
                   number: 80
-    - host: ssr-kibana.kro.kr
+    - host: kibana.{{ base_domain }}
       http:
         paths:
           - path: /
@@ -51,7 +51,7 @@ spec:
                 name: kibana-svc
                 port:
                   number: 80
-    - host: ssr-adminer.kro.kr
+    - host: adminer.{{ base_domain }}
       http:
         paths:
           - path: /
@@ -61,7 +61,7 @@ spec:
                 name: adminer
                 port:
                   number: 80
-    - host: ssr-grafana.kro.kr
+    - host: grafana.{{ base_domain }}
       http:
         paths:
           - path: /
@@ -71,7 +71,7 @@ spec:
                 name: monitoring-grafana
                 port:
                   number: 80
-    - host: ssr-prometheus.kro.kr
+    - host: prometheus.{{ base_domain }}
       http:
         paths:
           - path: /
@@ -81,7 +81,7 @@ spec:
                 name: monitoring-kube-prometheus-prometheus
                 port:
                   number: 80
-    - host: ssr-alertmanager.kro.kr
+    - host: alertmanager.{{ base_domain }}
       http:
         paths:
           - path: /
