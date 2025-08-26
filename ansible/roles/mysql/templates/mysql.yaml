@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: dev-system
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mysql
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: dev-system
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: "{{ vault_mysql_root_password }}"
+            - name: MYSQL_DATABASE
+              value: 'redmine'
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-storage
+          persistentVolumeClaim:
+            claimName: mysql-pvc

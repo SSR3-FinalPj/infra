@@ -1,0 +1,19 @@
+---
+# roles/storage/tasks/main.yml
+
+- name: Ensure dev-system namespace exists
+  kubernetes.core.k8s:
+    name: dev-system
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Deploy EFS StorageClass
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'storageClass.yaml') }}"
+
+- name: Create resources from templated PV definitions
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'createpv.yaml.j2') | from_yaml_all }}"

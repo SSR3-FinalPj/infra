@@ -1,0 +1,8 @@
+---
+# roles/mysql/tasks/main.yml
+
+- name: Deploy MySQL for Redmine
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/mysql.yaml'
+    namespace: dev-system

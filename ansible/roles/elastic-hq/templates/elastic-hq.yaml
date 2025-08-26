@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elastic-hq
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: elastic-hq
+  template:
+    metadata:
+      labels:
+        component: elastic-hq
+    spec:
+      containers:
+        - name: elastic-hq
+          image: elastichq/elasticsearch-hq
+          ports:
+            - containerPort: 5000
+              name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elastic-hq-cs
+  labels:
+    component: elastic-hq
+spec:
+  selector:
+    component: elastic-hq
+  ports:
+    - protocol: 'TCP'
+      port: 80
+      targetPort: 5000
+      name: elastic-hq-5000
+  type: ClusterIP

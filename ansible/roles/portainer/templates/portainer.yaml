@@ -1,0 +1,137 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: portainer-admin-secret
+  namespace: dev-system
+type: Opaque
+data:
+  admin-user: YWRtaW4=  # admin (base64 encoded)
+  admin-password: cG9ydGFpbmVyMTIz  # portainer123 (base64 encoded)
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: portainer-init-script
+  namespace: dev-system
+data:
+  init-admin.sh: |
+    #!/bin/sh
+    set -e
+    
+    echo "Waiting for Portainer to start..."
+    until curl -f http://localhost:9000/api/status 2>/dev/null; do
+      echo "Waiting for Portainer API..."
+      sleep 3
+    done
+    
+    echo "Checking if admin user already exists..."
+    STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/api/users/admin/check)
+    
+    if [ "$STATUS_CODE" = "404" ]; then
+      echo "Creating initial admin user..."
+      curl -X POST http://localhost:9000/api/users/admin/init \
+        -H "Content-Type: application/json" \
+        -d "{\"Username\":\"$ADMIN_USER\",\"Password\":\"$ADMIN_PASSWORD\"}" || {
+          echo "Failed to create admin user"
+          exit 1
+      }
+      echo "Admin user created successfully!"
+    else
+      echo "Admin user already exists, skipping initialization"
+    fi
+    
+    echo "Initialization complete. Going to sleep..."
+    while true; do
+      sleep 3600
+    done
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: portainer-sa-clusteradmin
+  namespace: dev-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: portainer-crb-clusteradmin
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: portainer-sa-clusteradmin
+    namespace: dev-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: portainer
+  namespace: dev-system
+  labels:
+    io.portainer.kubernetes.application.stack: portainer
+spec:
+  type: ClusterIP
+  selector:
+    app: app-portainer
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 9000
+    - name: edge
+      protocol: TCP
+      port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portainer
+  namespace: dev-system
+  labels:
+    io.portainer.kubernetes.application.stack: portainer
+spec:
+  selector:
+    matchLabels:
+      app: app-portainer
+  template:
+    metadata:
+      labels:
+        app: app-portainer
+    spec:
+      serviceAccountName: portainer-sa-clusteradmin
+      containers:
+        - name: portainer
+          image: portainer/portainer-ce:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9000
+              protocol: TCP
+            - containerPort: 8000
+              protocol: TCP
+        - name: portainer-init
+          image: curlimages/curl:latest
+          env:
+            - name: ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: portainer-admin-secret
+                  key: admin-user
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: portainer-admin-secret
+                  key: admin-password
+          command: ["/bin/sh"]
+          args: ["/scripts/init-admin.sh"]
+          volumeMounts:
+            - name: init-scripts
+              mountPath: /scripts
+              readOnly: true
+      volumes:
+        - name: init-scripts
+          configMap:
+            name: portainer-init-script
+            defaultMode: 0755

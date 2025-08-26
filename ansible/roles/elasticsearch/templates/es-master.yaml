@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch-master
+  labels:
+    component: elasticsearch
+    role: master
+spec:
+  selector:
+    matchLabels:
+      app: elasticsearch-master
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        checksum/config: 'cb690c2f30c22e585147e0524c63358f52023941bc7a4d56efc3730558bc0962'
+      labels:
+        app: elasticsearch-master
+    spec:
+      initContainers:
+        - name: init-sysctl
+          image: docker.io/busybox:1.27.2
+          command: ['sysctl', '-w', 'vm.max_map_count=262144']
+          securityContext:
+            privileged: true
+      containers:
+        - name: elasticsearch-master
+          securityContext:
+            privileged: true
+          image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+          #        resources:
+          #          limits:
+          #            memory: "20Gi"
+          ports:
+            - containerPort: 9300
+              name: transport
+            - containerPort: 9200
+              name: masterport
+          livenessProbe:
+            tcpSocket:
+              port: transport
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          volumeMounts:
+            - name: es-master-config
+              mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+              subPath: elasticsearch.yml
+            - name: es-master-config
+              mountPath: /usr/share/elasticsearch/config/jvm.options
+              subPath: jvm.options
+            - name: es-master-data
+              mountPath: /usr/share/elasticsearch/data
+            - name: es-master-logs
+              mountPath: /usr/share/elasticsearch/logs
+      #        - name: timezone
+      #          mountPath: /etc/localtime
+      #          readOnly: true
+      volumes:
+        - name: es-master-config
+          configMap:
+            name: es-master-config
+        - name: es-master-data
+          persistentVolumeClaim:
+            claimName: es-master-data-pvc
+        - name: es-master-logs
+          persistentVolumeClaim:
+            claimName: es-master-logs-pvc
+      #      - name: timezone
+      #        hostPath:
+      #          path: /etc/localtime
+      nodeSelector:
+        dspESType: 'master'

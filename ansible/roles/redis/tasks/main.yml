@@ -1,0 +1,38 @@
+---
+# roles/redis/tasks/main.yml
+
+- name: Deploy Redis PVC
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-pvc.yaml'
+    namespace: dev-system
+
+- name: Deploy Redis Master Client Service
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-master-cs.yaml'
+    namespace: dev-system
+
+- name: Deploy Redis Master
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-master.yaml'
+    namespace: dev-system
+
+- name: Deploy Redis Sentinel Service
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-sentinel-service.yaml'
+    namespace: dev-system
+
+- name: Deploy Redis Controller
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-controller.yaml'
+    namespace: dev-system
+
+- name: Deploy Redis Sentinel Controller
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-sentinel-controller.yaml'
+    namespace: dev-system

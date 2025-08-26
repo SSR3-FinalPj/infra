@@ -1,0 +1,35 @@
+---
+# roles/ingress/tasks/main.yml
+
+- name: Ensure prod-system namespace exists
+  kubernetes.core.k8s:
+    name: prod-system
+    api_version: v1
+    kind: Namespace
+    state: present
+
+- name: Create ALB IngressClass
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: networking.k8s.io/v1
+      kind: IngressClass
+      metadata:
+        name: alb
+      spec:
+        controller: ingress.k8s.aws/alb
+
+- name: Deploy test application for ALB Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'http_test.yaml.j2') }}"
+
+- name: Deploy External Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'alb_external_ingress.yaml.j2') }}"
+
+- name: Deploy Internal Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'alb_internal_ingress.yaml.j2') }}"

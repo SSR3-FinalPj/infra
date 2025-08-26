@@ -1,0 +1,8 @@
+---
+# roles/elastic-hq/tasks/main.yml
+
+- name: Deploy Elastic-HQ
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/elastic-hq.yaml'
+    namespace: dev-system

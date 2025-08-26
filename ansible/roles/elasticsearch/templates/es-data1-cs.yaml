@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch-data1-cs
+  labels:
+    component: elasticsearch-data1
+spec:
+  selector:
+    component: elasticsearch-data1
+  ports:
+    - protocol: 'TCP'
+      port: 9200
+      targetPort: 9200
+      name: elasticsearch-9200
+    - protocol: 'TCP'
+      port: 9300
+      targetPort: 9300
+      name: elasticsearch-9300
+  type: ClusterIP

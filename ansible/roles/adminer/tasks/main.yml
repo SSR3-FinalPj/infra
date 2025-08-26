@@ -1,0 +1,14 @@
+---
+# roles/adminer/tasks/main.yml
+
+- name: Deploy Adminer ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/adminer-configmap.yaml'
+    namespace: dev-system
+
+- name: Deploy Adminer Deployment
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/adminer.yaml'
+    namespace: dev-system

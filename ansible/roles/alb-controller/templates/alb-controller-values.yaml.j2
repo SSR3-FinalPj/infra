@@ -1,0 +1,10 @@
+clusterName: "{{ eks_cluster_name.value }}"
+region: "{{ aws_region.value }}"
+vpcId: "{{ vpc_id.value }}"
+serviceAccount:
+  create: true
+  name: aws-load-balancer-controller
+  annotations:
+    eks.amazonaws.com/role-arn: "{{ alb_controller_role_arn.value }}"
+image:
+  repository: "602401143452.dkr.ecr.{{ aws_region.value }}.amazonaws.com/amazon/aws-load-balancer-controller"

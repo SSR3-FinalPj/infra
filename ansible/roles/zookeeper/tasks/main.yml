@@ -1,0 +1,38 @@
+---
+# roles/zookeeper/tasks/main.yml
+
+- name: Delete existing Zookeeper resources to ensure re-application
+  kubernetes.core.k8s:
+    state: absent
+    src: '{{ item }}'
+    namespace: dev-system
+  loop:
+    - 'templates/zk.yaml'
+    - 'templates/zk-svc.yaml'
+    - 'templates/zk-pdb.yaml'
+    - 'templates/zk-configmap.yaml'
+  ignore_errors: true
+
+- name: Deploy Zookeeper ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/zk-configmap.yaml'
+    namespace: dev-system
+
+- name: Deploy Zookeeper PodDisruptionBudget
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/zk-pdb.yaml'
+    namespace: dev-system
+
+- name: Deploy Zookeeper Service
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/zk-svc.yaml'
+    namespace: dev-system
+
+- name: Deploy Zookeeper StatefulSet
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/zk.yaml'
+    namespace: dev-system

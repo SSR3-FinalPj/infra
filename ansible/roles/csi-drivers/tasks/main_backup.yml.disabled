@@ -1,0 +1,36 @@
+---
+# roles/csi-drivers/tasks/main.yml
+
+- name: Add aws-ebs-csi-driver Helm repository
+  community.kubernetes.helm_repository:
+    name: aws-ebs-csi-driver
+    repo_url: "https://kubernetes-sigs.github.io/aws-ebs-csi-driver"
+
+- name: Render EBS CSI Driver values file
+  ansible.builtin.template:
+    src: ebs-csi-values.yaml.j2
+    dest: /tmp/ebs-csi-values.yaml
+
+- name: Install AWS EBS CSI Driver via Helm CLI
+  ansible.builtin.command: >
+    helm upgrade --install aws-ebs-csi-driver
+    aws-ebs-csi-driver/aws-ebs-csi-driver
+    --namespace kube-system
+    -f /tmp/ebs-csi-values.yaml
+  changed_when: true
+
+- name: Install AWS EFS CSI Driver using official manifest
+  ansible.builtin.command: >
+    kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.3"
+  changed_when: true
+
+- name: Patch EFS CSI Driver ServiceAccount with IAM Role ARN
+  ansible.builtin.command: >
+    kubectl patch serviceaccount efs-csi-controller-sa
+    -n kube-system
+    -p '{"metadata":{"annotations":{"eks.amazonaws.com/role-arn":"{{ efs_csi_driver_role_arn }}"}}}'
+  changed_when: true
+  register: patch_result
+  until: patch_result.rc == 0
+  retries: 5
+  delay: 10

@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kibana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: kibana
+  template:
+    metadata:
+      labels:
+        component: kibana
+    spec:
+      containers:
+        - name: kibana
+          image: docker.elastic.co/kibana/kibana:8.13.4
+          ports:
+            - containerPort: 5601
+              name: http
+          #        command:
+          #        - "bin/bash"
+          #        - "-c"
+          #        - "nohup /usr/share/kibana/bin/kibana > nohup.out &"
+
+          env:
+            - name: 'CLUSTER_NAME'
+              value: 'myesdb'
+            - name: ELASTICSEARCH_URL
+              value: http://elasticsearch-lb:9201
+            - name: TZ
+              value: Asia/Seoul
+          volumeMounts:
+            - name: kibana-config
+              mountPath: /usr/share/kibana/config
+            - name: kibana-data
+              mountPath: /usr/share/kibana/data
+      #          - name: timezone
+      #            mountPath: /etc/localtime
+      #            readOnly: true
+      volumes:
+        - name: kibana-config
+          configMap:
+            name: kibana-config
+        - name: kibana-data
+          persistentVolumeClaim:
+            claimName: kibana-data-pvc
+#        - hostPath:
+#            path: /etc/localtime
+#          name: timezone
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kibana-svc
+  labels:
+    component: kibana
+spec:
+  selector:
+    component: kibana
+  ports:
+    - protocol: 'TCP'
+      port: 80
+      targetPort: 5601
+      name: kibana-5601
+  type: ClusterIP

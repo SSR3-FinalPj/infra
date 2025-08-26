@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alb-test-app
+  namespace: prod-system
+  labels:
+    app: alb-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: alb-test
+  template:
+    metadata:
+      labels:
+        app: alb-test
+    spec:
+      containers:
+        - name: alb-test
+          image: hashicorp/http-echo
+          args:
+            - '-text=Hello from ALB'
+          ports:
+            - containerPort: 5678
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alb-test-service
+  namespace: prod-system
+spec:
+  selector:
+    app: alb-test
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5678

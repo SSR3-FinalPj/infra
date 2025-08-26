@@ -1,0 +1,14 @@
+---
+# roles/kibana/tasks/main.yml
+
+- name: Deploy Kibana ConfigMap
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/kibana-configmap.yaml'
+    namespace: dev-system
+
+- name: Deploy Kibana Deployment
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/kibana.yaml'
+    namespace: dev-system

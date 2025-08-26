@@ -1,0 +1,58 @@
+---
+# PV/PVC management moved to storage role for centralized management
+
+- name: Apply Airflow Service RBAC
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'airflow_service_rbac.yaml.j2') | from_yaml_all }}"
+
+- name: Delete existing Airflow Init Job to allow re-creation
+  kubernetes.core.k8s:
+    api_version: batch/v1
+    kind: Job
+    name: airflow-service-init
+    namespace: dev-system
+    state: absent
+    wait: yes
+
+- name: Apply Airflow Service Init
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'airflow_service_init.yaml.j2') | from_yaml_all }}"
+
+- name: Apply Airflow DB Connection Secret
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'db_connection_secret.yaml.j2') | from_yaml_all }}"
+
+- name: Apply Airflow Service Secrets
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'service_secrets.yaml.j2') | from_yaml_all }}"
+
+- name: Apply Airflow Service
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'airflow_service.yaml.j2') | from_yaml_all }}"
+
+- name: Delete existing Pod Template to allow re-creation
+  kubernetes.core.k8s:
+    kind: Pod
+    name: airflow-worker-pod-template
+    namespace: dev-system
+    state: absent
+
+- name: Apply Pod Template
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'pod_template.yaml.j2') | from_yaml_all }}"
+
+- name: Apply API Service Secrets
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'api_service_secrets.yaml.j2') | from_yaml_all }}"
+
+- name: Apply Token Updater Deployment
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'token_updater_deployment.yaml.j2') | from_yaml_all }}"
