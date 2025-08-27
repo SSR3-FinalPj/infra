@@ -7,7 +7,7 @@
 기존의 쉘 스크립트 기반 배포 방식을 리팩토링하여, AWS 인프라 프로비저닝은 **Terraform**으로, Kubernetes 클러스터 설정 및 애플리케이션 배포는 **Ansible**로 역할을 명확히 분리했습니다. 이를 통해 전체 배포 과정의 자동화 수준과 안정성, 재사용성을 높였습니다.
 
 - **Terraform (`terraform/`):** VPC, Subnet, EKS 클러스터, Node Groups, EFS, IAM Role 및 Policy, 클러스터 애드온(ALB Controller, CSI Drivers) 등 모든 AWS 리소스를 관리합니다.
-- **Ansible (`ansible/`):** Terraform으로 프로비저닝된 EKS 클러스터 위에 애플리케이션(Zookeeper, Kafka, Databases, Redmine 등)을 Role 기반으로 체계적으로 배포합니다.
+- **Ansible (`ansible/`):** Terraform으로 프로비저닝된 EKS 클러스터 위에 애플리케이션(Zookeeper, Kafka, Databases, 모니터링 스택, Redmine 등)을 Role 기반으로 체계적으로 배포합니다.
 
 ## 2. 사전 요구사항
 
@@ -19,6 +19,8 @@
 - **AWS CLI**
   - AWS 자격 증명(Access Key, Secret Key)이 설정되어 있어야 합니다. (`aws configure`)
 - **kubectl**
+- **Helm** (v3.0 이상 권장)
+  - Prometheus 모니터링 스택 배포에 필요합니다.
 
 ### ⚠️ 보안 설정 (중요!)
 
@@ -87,7 +89,19 @@
     # (현재 위치: refactored/ansible)
     ansible-playbook playbook.yml --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
     ```
-    플레이북이 실행되면서 `storage` Role부터 `redmine` Role까지 정의된 순서대로 모든 애플리케이션이 클러스터에 배포됩니다.
+    플레이북이 실행되면서 `csi-drivers` Role부터 `ingress` Role까지 정의된 순서대로 모든 애플리케이션이 클러스터에 배포됩니다.
+
+### 특정 애플리케이션만 배포
+
+특정 태그를 사용하여 개별 애플리케이션만 배포할 수 있습니다:
+
+```bash
+# Prometheus 모니터링 스택만 배포
+ansible-playbook playbook.yml --tags "prometheus" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
+# Kafka와 Zookeeper만 배포
+ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+```
 
 ## 4. 리소스 삭제 절차
 
@@ -110,12 +124,63 @@
     ```
     `yes`를 입력하여 삭제를 진행합니다.
 
-## 5. 프로젝트 구조
+## 5. 배포되는 애플리케이션 스택
 
-- **`refactored/`**
-  - **`terraform/`**: 모든 AWS 인프라(VPC, EKS, EFS, IAM, Addons) 정의
-  - **`ansible/`**: 모든 Kubernetes 리소스(애플리케이션) 배포 정의
-    - `inventory/`: Ansible이 대상으로 할 서버 목록 (현재는 `localhost`)
-    - `roles/`: 각 애플리케이션별로 분리된 Role 디렉토리
-    - `playbook.yml`: Role 실행 순서를 정의하는 메인 플레이북
-    - `terraform_outputs.json`: Terraform에서 생성된 출력 값이 저장되는 파일 (Git에는 포함하지 않는 것을 권장)
+애플리케이션은 `ansible/playbook.yml`을 통해 다음 순서로 배포됩니다:
+
+### 🏗️ **인프라 레이어**
+1. **CSI Drivers**: EFS 및 EBS 볼륨 지원
+2. **ALB Controller**: AWS Application Load Balancer 관리
+3. **Storage**: StorageClass 및 PersistentVolume 설정
+
+### 🌐 **네트워킹 레이어**
+4. **Ingress**: ALB 기반 외부/내부 로드밸런서 설정
+
+### 💾 **데이터 레이어**
+5. **Zookeeper**: 분산 시스템 코디네이션
+6. **Kafka**: 실시간 스트리밍 플랫폼 (+Kafka UI)
+7. **PostgreSQL**: 관계형 데이터베이스 (Airflow용)
+
+### ⚙️ **처리 레이어**
+8. **Airflow**: 워크플로우 오케스트레이션 (커스텀 DAG 포함)
+9. **Adminer**: 데이터베이스 관리 도구
+
+### 🚀 **캐싱 레이어**
+10. **Redis**: 인메모리 캐시 (Sentinel 구성)
+
+### 📊 **분석 레이어**
+11. **Elasticsearch**: 검색 및 분석 엔진
+12. **Kibana**: 데이터 시각화 도구
+13. **Elastic-HQ**: Elasticsearch 클러스터 관리
+
+### 📈 **모니터링 레이어** (Helm 차트)
+14. **Prometheus Stack**: Helm을 사용하여 통합 배포
+    - **Prometheus**: 메트릭 수집 및 저장
+    - **Grafana**: 대시보드 및 시각화
+    - **AlertManager**: 알림 관리
+    - 네임스페이스: `dev-system`
+    - ServiceMonitor를 통한 기존 서비스 메트릭 수집
+
+### 🔧 **관리 레이어**
+15. **Portainer**: Docker/Kubernetes 관리 인터페이스
+
+### 🗄️ **추가 데이터베이스**
+16. **MySQL**: 범용 관계형 데이터베이스
+
+### 📋 **애플리케이션**
+17. **Redmine**: 프로젝트 관리 도구
+
+### 📝 **모니터링 접근 정보**
+- **Grafana**: ALB Internal Ingress를 통해 접근 가능
+- **Prometheus**: `http://monitoring-kube-prometheus-prometheus.dev-system:9090`
+- **AlertManager**: `http://monitoring-kube-prometheus-alertmanager.dev-system:9093`
+
+## 6. 프로젝트 구조
+
+- **`terraform/`**: 모든 AWS 인프라(VPC, EKS, EFS, IAM, Addons) 정의
+- **`ansible/`**: 모든 Kubernetes 리소스(애플리케이션) 배포 정의
+  - `inventory/`: Ansible이 대상으로 할 서버 목록 (현재는 `localhost`)
+  - `roles/`: 각 애플리케이션별로 분리된 Role 디렉토리
+  - `playbook.yml`: Role 실행 순서를 정의하는 메인 플레이북
+  - `terraform_outputs.json`: Terraform에서 생성된 출력 값이 저장되는 파일 (Git에는 포함하지 않는 것을 권장)
+- **`temp_airflow/`**: 커스텀 Airflow 설정 및 DAG
