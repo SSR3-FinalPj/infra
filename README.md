@@ -110,7 +110,7 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
 1.  **Ansible로 애플리케이션 삭제:**
 
     ```bash
-    ansible-playbook delete_playbook.yml --tags "airflow" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+    ansible-playbook delete_playbook.yml --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
     ```
 
 2.  **Terraform으로 인프라 전체 삭제:**
@@ -129,31 +129,38 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
 애플리케이션은 `ansible/playbook.yml`을 통해 다음 순서로 배포됩니다:
 
 ### 🏗️ **인프라 레이어**
+
 1. **CSI Drivers**: EFS 및 EBS 볼륨 지원
 2. **ALB Controller**: AWS Application Load Balancer 관리
 3. **Storage**: StorageClass 및 PersistentVolume 설정
 
 ### 🌐 **네트워킹 레이어**
+
 4. **Ingress**: ALB 기반 외부/내부 로드밸런서 설정
 
 ### 💾 **데이터 레이어**
+
 5. **Zookeeper**: 분산 시스템 코디네이션
 6. **Kafka**: 실시간 스트리밍 플랫폼 (+Kafka UI)
 7. **PostgreSQL**: 관계형 데이터베이스 (Airflow용)
 
 ### ⚙️ **처리 레이어**
+
 8. **Airflow**: 워크플로우 오케스트레이션 (커스텀 DAG 포함)
 9. **Adminer**: 데이터베이스 관리 도구
 
 ### 🚀 **캐싱 레이어**
+
 10. **Redis**: 인메모리 캐시 (Sentinel 구성)
 
 ### 📊 **분석 레이어**
+
 11. **Elasticsearch**: 검색 및 분석 엔진
 12. **Kibana**: 데이터 시각화 도구
 13. **Elastic-HQ**: Elasticsearch 클러스터 관리
 
 ### 📈 **모니터링 레이어** (Helm 차트)
+
 14. **Prometheus Stack**: Helm을 사용하여 통합 배포
     - **Prometheus**: 메트릭 수집 및 저장
     - **Grafana**: 대시보드 및 시각화
@@ -162,15 +169,19 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
     - ServiceMonitor를 통한 기존 서비스 메트릭 수집
 
 ### 🔧 **관리 레이어**
+
 15. **Portainer**: Docker/Kubernetes 관리 인터페이스
 
 ### 🗄️ **추가 데이터베이스**
+
 16. **MySQL**: 범용 관계형 데이터베이스
 
 ### 📋 **애플리케이션**
+
 17. **Redmine**: 프로젝트 관리 도구
 
 ### 📝 **모니터링 접근 정보**
+
 - **Grafana**: ALB Internal Ingress를 통해 접근 가능
 - **Prometheus**: `http://monitoring-kube-prometheus-prometheus.dev-system:9090`
 - **AlertManager**: `http://monitoring-kube-prometheus-alertmanager.dev-system:9093`
