@@ -114,9 +114,7 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
     ```
 
 2.  **Terraform으로 인프라 전체 삭제:**
-    `terraform` 디렉토리에서 `destroy` 명령을 실행하면 VPC부터 EKS 클러스터까지 모든 AWS 리소스가 삭제됩니다.
-    단, 그 전에 AWS Console에서 LB 엔드포인트 먼저 삭제 --> ALB는 Terraform이 아니라 Ansible 단계에서 설정되기 때문에, Terraform이 인식해서 지워 주지 않음. 그래서 의존성 문제로 네트워크 인터페이스 삭제가 불가능하게 됨.
-    (선택) 그리고 혹시 모르니 VPN 엔드포인트 대상 네트워크 연결도 해제해 줄 것.
+    `terraform` 디렉토리에서 `destroy` 명령을 실행하면 VPC부터 EKS 클러스터까지 모든 AWS 리소스가 삭제됩니다. 엔드포인트 대상 네트워크 연결도 해제해 줄 것.
     ec2 -> 볼륨도 제거, VPC 안 지워지면 손으로 삭제
     ```bash
     cd refactored/terraform
