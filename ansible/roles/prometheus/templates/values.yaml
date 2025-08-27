@@ -120,6 +120,73 @@ grafana:
       isDefault: false
       editable: true
 
+  # Dashboard Providers Configuration
+  dashboardProviders:
+    dashboardproviders.yaml:
+      apiVersion: 1
+      providers:
+      - name: 'kubernetes-monitoring'
+        orgId: 1
+        folder: 'Kubernetes Monitoring'
+        folderUid: 'k8s-monitoring'
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards/kubernetes-monitoring
+      - name: 'application-monitoring'
+        orgId: 1
+        folder: 'Application Monitoring'
+        folderUid: 'app-monitoring'
+        type: file
+        disableDeletion: false
+        editable: true
+        updateIntervalSeconds: 10
+        allowUiUpdates: true
+        options:
+          path: /var/lib/grafana/dashboards/application-monitoring
+  
+  # ConfigMap으로부터 대시보드 자동 로딩 (sidecar)
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1" 
+      folder: /tmp/dashboards
+      folderAnnotation: grafana_folder
+      searchNamespace: dev-system
+      provider:
+        disableDelete: false
+        allowUiUpdates: true
+        foldersFromFilesStructure: true
+
+  # Dashboard Files - 커뮤니티 대시보드와 커스텀 대시보드 조합
+  dashboards:
+    kubernetes-monitoring:
+      # Node Exporter 기본 대시보드 (검증된 커뮤니티 버전)
+      node-exporter-full:
+        gnetId: 1860
+        revision: 31
+        datasource: Prometheus
+      # Kubernetes Cluster Monitoring
+      kubernetes-cluster-monitoring:
+        gnetId: 7249
+        revision: 1  
+        datasource: Prometheus
+    application-monitoring:
+      # Redis Dashboard
+      redis-overview:
+        gnetId: 763
+        revision: 4
+        datasource: Prometheus
+      # PostgreSQL Dashboard  
+      postgresql-overview:
+        gnetId: 9628
+        revision: 7
+        datasource: Prometheus
+
 ## AlertManager Configuration
 alertmanager:
   service:

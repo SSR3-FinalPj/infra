@@ -74,11 +74,42 @@
     src: 'templates/servicemonitors.yaml'
     namespace: dev-system
 
+- name: Create ConfigMap for custom EKS dashboard
+  shell: |
+    kubectl create configmap eks-nodes-monitoring-dashboard \
+      --from-file={{ role_path }}/templates/grafana-dashboards/eks-nodes-monitoring.json \
+      --namespace=dev-system \
+      --dry-run=client -o yaml | \
+      sed 's/eks-nodes-monitoring\.json/eks-nodes-monitoring.json/' | \
+      kubectl apply -f -
+    kubectl label configmap eks-nodes-monitoring-dashboard \
+      grafana_dashboard=1 grafana_folder="Kubernetes-Monitoring" \
+      --namespace=dev-system --overwrite
+  ignore_errors: true
+
+- name: Create ConfigMap for custom Application dashboard
+  shell: |
+    kubectl create configmap application-overview-dashboard \
+      --from-file={{ role_path }}/templates/grafana-dashboards/application-overview.json \
+      --namespace=dev-system \
+      --dry-run=client -o yaml | \
+      sed 's/application-overview\.json/application-overview.json/' | \
+      kubectl apply -f -
+    kubectl label configmap application-overview-dashboard \
+      grafana_dashboard=1 grafana_folder="Application-Monitoring" \
+      --namespace=dev-system --overwrite
+  ignore_errors: true
+
 - name: Display monitoring access information
   debug:
     msg:
       - "Prometheus Stack deployed successfully!"
-      - "Grafana will be available through ALB Internal Ingress"
-      - "Prometheus server: http://monitoring-kube-prometheus-prometheus.dev-system:9090"
-      - "Grafana: http://monitoring-grafana.dev-system:80"
-      - "AlertManager: http://monitoring-kube-prometheus-alertmanager.dev-system:9093"
+      - "✅ 커뮤니티 대시보드: Node Exporter, Kubernetes Cluster, Redis, PostgreSQL"
+      - "✅ 커스텀 대시보드: EKS 노드 모니터링, 애플리케이션 개요"
+      - "📊 Grafana: ALB Internal Ingress를 통해 접근 (admin/grafana163)"
+      - "🔍 Prometheus: http://monitoring-kube-prometheus-prometheus.dev-system:9090"
+      - "⚠️ AlertManager: http://monitoring-kube-prometheus-alertmanager.dev-system:9093"
+      - ""
+      - "🎯 대시보드 위치:"
+      - "   - Kubernetes-Monitoring 폴더: EKS 노드 모니터링, Node Exporter"
+      - "   - Application-Monitoring 폴더: 애플리케이션 개요, Redis, PostgreSQL"

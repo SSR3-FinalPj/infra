@@ -14,8 +14,6 @@
       tags: kafka
     - role: postgresql
       tags: postgresql
-    - role: airflow
-      tags: airflow
     - role: adminer
       tags: adminer
     - role: redis
