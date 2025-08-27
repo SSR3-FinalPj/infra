@@ -1,0 +1,777 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "EKS 워커 노드 모니터링 대시보드 - USE/RED 방법론 및 Best Practice 기반으로 개선됨",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "iteration": 1640995200000,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "id": 100,
+      "panels": [],
+      "title": "📊 클러스터 개요 (Overview)",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "전체 노드 수와 상태 요약",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 0, "y": 1 },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "count(up{job=\"node-exporter\"})",
+          "interval": "",
+          "legendFormat": "총 노드 수",
+          "refId": "A"
+        }
+      ],
+      "title": "🔢 총 노드 수",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Ready 상태인 노드 수",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "green", "value": 2 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 4, "w": 4, "x": 4, "y": 1 },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "textMode": "auto"
+      },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "sum(kube_node_status_condition{condition=\"Ready\",status=\"true\"})",
+          "interval": "",
+          "legendFormat": "Ready 노드",
+          "refId": "A"
+        }
+      ],
+      "title": "✅ Ready 노드",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "전체 노드의 평균 CPU 사용률",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 1 },
+      "id": 3,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)",
+          "interval": "",
+          "legendFormat": "평균 CPU 사용률",
+          "refId": "A"
+        }
+      ],
+      "title": "💻 평균 CPU 사용률",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "전체 노드의 평균 메모리 사용률",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 1 },
+      "id": 4,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true
+      },
+      "targets": [
+        {
+          "expr": "100 * (1 - avg((node_memory_MemAvailable_bytes) / (node_memory_MemTotal_bytes)))",
+          "interval": "",
+          "legendFormat": "평균 메모리 사용률",
+          "refId": "A"
+        }
+      ],
+      "title": "🧠 평균 메모리 사용률",
+      "type": "gauge"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "노드 컨디션 상태 (Ready, DiskPressure, MemoryPressure) - 문제가 있는 노드를 빠르게 확인",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": { "align": "auto", "displayMode": "color-background" },
+          "mappings": [
+            {
+              "options": {
+                "0": { "color": "red", "index": 1, "text": "False" },
+                "1": { "color": "green", "index": 0, "text": "True" }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 80 }
+            ]
+          }
+        }
+      },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 5 },
+      "id": 11,
+      "options": { "showHeader": true },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "kube_node_status_condition{condition=\"Ready\",status=\"true\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "A"
+        },
+        {
+          "expr": "kube_node_status_condition{condition=\"DiskPressure\",status=\"true\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "B"
+        },
+        {
+          "expr": "kube_node_status_condition{condition=\"MemoryPressure\",status=\"true\"}",
+          "format": "table",
+          "instant": true,
+          "refId": "C"
+        }
+      ],
+      "title": "⚠️ 노드 컨디션 상태 (Errors/Conditions)",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "job": true, "__name__": true, "status": true },
+            "indexByName": {},
+            "renameByName": { "node": "노드", "condition": "컨디션", "Value": "상태" }
+          }
+        }
+      ],
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 13 },
+      "id": 101,
+      "panels": [],
+      "title": "🔥 자원 이용률 (Utilization)",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "노드별 CPU 사용률 시간 변화 (5분 평균)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "dashed+area" }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "100 - (irate(node_cpu_seconds_total{mode=\"idle\",instance=~\"$node\"}[5m]) * 100)",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "💻 CPU 사용률 (노드별)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "노드별 메모리 사용률 시간 변화",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "dashed+area" }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 75 },
+              { "color": "red", "value": 90 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "id": 7,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "100 * (1 - (node_memory_MemAvailable_bytes{instance=~\"$node\"} / node_memory_MemTotal_bytes{instance=~\"$node\"}))",
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "title": "🧠 메모리 사용률 (노드별)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 22 },
+      "id": 102,
+      "panels": [],
+      "title": "⚡ 포화도 (Saturation)",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "시스템 로드 평균 (코어 수로 정규화). 1.0 이상이면 해당 코어가 처리할 수 있는 양보다 많은 작업이 대기중임을 의미합니다.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.8 },
+              { "color": "red", "value": 1.2 }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 23 },
+      "id": 8,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "node_load1{instance=~\"$node\"} / on(instance) group_left() count(node_cpu_seconds_total{mode='idle', instance=~\"$node\"}) by (instance)",
+          "legendFormat": "{{instance}} - 1분",
+          "refId": "A"
+        },
+        {
+          "expr": "node_load5{instance=~\"$node\"} / on(instance) group_left() count(node_cpu_seconds_total{mode='idle', instance=~\"$node\"}) by (instance)",
+          "legendFormat": "{{instance}} - 5분",
+          "refId": "B"
+        },
+        {
+          "expr": "node_load15{instance=~\"$node\"} / on(instance) group_left() count(node_cpu_seconds_total{mode='idle', instance=~\"$node\"}) by (instance)",
+          "legendFormat": "{{instance}} - 15분",
+          "refId": "C"
+        }
+      ],
+      "title": "📈 정규화된 시스템 로드 평균 (코어당)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "디스크 I/O 시간 비율 - 높을수록 디스크 포화 상태",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 23 },
+      "id": 9,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "irate(node_disk_io_time_seconds_total{instance=~\"$node\"}[5m]) * 100",
+          "legendFormat": "{{instance}} - {{device}}",
+          "refId": "A"
+        }
+      ],
+      "title": "💿 디스크 I/O 포화도",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 31 },
+      "id": 103,
+      "panels": [],
+      "title": "🌐 네트워크 및 디스크 I/O (Rate, Errors)",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "네트워크 인/아웃 트래픽 (수신: 녹색, 송신: 파란색)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": { "steps": [{ "color": "green", "value": null }] },
+          "unit": "binBps"
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Transmit" },
+            "properties": [{ "id": "color", "value": "blue" }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Receive" },
+            "properties": [{ "id": "color", "value": "green" }]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 32 },
+      "id": 10,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "irate(node_network_receive_bytes_total{instance=~\"$node\",device!~\"lo|veth.*|docker.*|flannel.*|cali.*|cbr.*\"}[5m])",
+          "legendFormat": "{{instance}} - Receive",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(node_network_transmit_bytes_total{instance=~\"$node\",device!~\"lo|veth.*|docker.*|flannel.*|cali.*|cbr.*\"}[5m])",
+          "legendFormat": "{{instance}} - Transmit",
+          "refId": "B"
+        }
+      ],
+      "title": "📡 네트워크 I/O (Rate)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "네트워크 에러 및 유실 패킷 수 (RED 방법론의 Errors 지표)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          },
+          "unit": "pps"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 32 },
+      "id": 14,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "irate(node_network_receive_errs_total{instance=~\"$node\"}[5m]) + irate(node_network_transmit_errs_total{instance=~\"$node\"}[5m])",
+          "legendFormat": "{{instance}} - Errors",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(node_network_receive_drop_total{instance=~\"$node\"}[5m]) + irate(node_network_transmit_drop_total{instance=~\"$node\"}[5m])",
+          "legendFormat": "{{instance}} - Drops",
+          "refId": "B"
+        }
+      ],
+      "title": "🚫 네트워크 에러/유실 (Errors)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "초당 디스크 읽기/쓰기 작업 수 (RED 방법론의 Rate 지표)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": { "steps": [{ "color": "green", "value": null }] },
+          "unit": "iops"
+        }
+      },
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 32 },
+      "id": 15,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "irate(node_disk_reads_completed_total{instance=~\"$node\"}[5m])",
+          "legendFormat": "{{instance}} - Reads",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(node_disk_writes_completed_total{instance=~\"$node\"}[5m])",
+          "legendFormat": "{{instance}} - Writes",
+          "refId": "B"
+        }
+      ],
+      "title": "💾 디스크 IOPS (Rate)",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "id": 104,
+      "panels": [],
+      "title": "📋 추가 지표 (우선순위 낮음)",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "파일시스템 사용률 (/root, /var 등 주요 마운트 포인트)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "line" }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "red", "value": 95 }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 41 },
+      "id": 12,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "max"],
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "100 * (1 - (node_filesystem_avail_bytes{instance=~\"$node\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{instance=~\"$node\",fstype!=\"tmpfs\"}))",
+          "legendFormat": "{{instance}} - {{mountpoint}}",
+          "refId": "A"
+        }
+      ],
+      "title": "💽 파일시스템 사용률",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "노드 업타임 및 포드 밀도 (노드당 포드 수)",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": { "steps": [{ "color": "green", "value": null }] },
+          "unit": "short"
+        }
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 41 },
+      "id": 13,
+      "options": {
+        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom" },
+        "tooltip": { "mode": "single" }
+      },
+      "targets": [
+        {
+          "expr": "kube_node_status_allocatable{resource=\"pods\",node=~\"$node.*\"}",
+          "legendFormat": "{{node}} - 최대 포드",
+          "refId": "A"
+        },
+        {
+          "expr": "count(kube_pod_info{node=~\"$node.*\"}) by (node)",
+          "legendFormat": "{{node}} - 현재 포드",
+          "refId": "B"
+        }
+      ],
+      "title": "🏠 포드 밀도 (pods per node)",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": ["kubernetes", "eks", "node-monitoring", "use-methodology", "red-methodology"],
+  "templating": {
+    "list": [
+      {
+        "allValue": ".*",
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": "Prometheus",
+        "definition": "label_values(node_cpu_seconds_total, instance)",
+        "description": "모니터링할 노드를 선택하세요",
+        "error": null,
+        "hide": 0,
+        "includeAll": true,
+        "label": "Node",
+        "multi": true,
+        "name": "node",
+        "options": [],
+        "query": {
+          "query": "label_values(node_cpu_seconds_total, instance)",
+          "refId": "StandardVariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "🎯 EKS 노드 모니터링 (USE/RED Best Practice)",
+  "uid": "eks-nodes-monitoring",
+  "version": 2
+}

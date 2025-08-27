@@ -1,0 +1,672 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": "-- Grafana --",
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "애플리케이션 종합 모니터링 대시보드 (Kubernetes Pod 기반)",
+  "editable": true,
+  "gnetId": null,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 100,
+      "panels": [],
+      "title": "📊 애플리케이션 상태 개요 (Pod 기반)",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Kafka Pod 실행 상태 및 개수",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Stopped"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "green",
+                  "index": 0
+                },
+                "to": 10
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "id": 1,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"kafka-.*\",phase=\"Running\"})",
+          "interval": "",
+          "legendFormat": "Running Pods",
+          "refId": "A"
+        }
+      ],
+      "title": "🟢 Kafka Pods",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Redis Pod 실행 상태 및 개수",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Stopped"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "green",
+                  "index": 0
+                },
+                "to": 10
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 1
+      },
+      "id": 2,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"redis-.*|.*redis.*\",phase=\"Running\"})",
+          "interval": "",
+          "legendFormat": "Running Pods",
+          "refId": "A"
+        }
+      ],
+      "title": "🔴 Redis Pods",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "Elasticsearch Pod 실행 상태 및 개수",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Stopped"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "green",
+                  "index": 0
+                },
+                "to": 10
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 2
+              },
+              {
+                "color": "green",
+                "value": 3
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 12,
+        "y": 1
+      },
+      "id": 3,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"elasticsearch-.*\",phase=\"Running\"})",
+          "interval": "",
+          "legendFormat": "Running Pods",
+          "refId": "A"
+        }
+      ],
+      "title": "🟡 Elasticsearch Pods",
+      "type": "stat"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "PostgreSQL Pod 실행 상태 및 개수",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 1,
+                  "text": "Stopped"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "green",
+                  "index": 0
+                },
+                "to": 10
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
+            ]
+          },
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "id": 4,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"postgresql-.*\",phase=\"Running\"})",
+          "interval": "",
+          "legendFormat": "Running Pods",
+          "refId": "A"
+        }
+      ],
+      "title": "🔵 PostgreSQL Pods",
+      "type": "stat"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 7
+      },
+      "id": 101,
+      "panels": [],
+      "title": "📈 애플리케이션 리소스 사용량",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "각 애플리케이션 Pod의 CPU 사용률",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 5,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "rate(container_cpu_usage_seconds_total{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\",container!=\"POD\",container!=\"\"}[5m]) * 100",
+          "interval": "",
+          "legendFormat": "{{pod}} - {{container}}",
+          "refId": "A"
+        }
+      ],
+      "title": "💻 애플리케이션 CPU 사용률",
+      "type": "timeseries"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "각 애플리케이션 Pod의 메모리 사용량",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisLabel": "",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "vis": false
+            },
+            "lineInterpolation": "linear",
+            "lineWidth": 1,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "never",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "min": 0,
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 6,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single"
+        }
+      },
+      "targets": [
+        {
+          "expr": "container_memory_working_set_bytes{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\",container!=\"POD\",container!=\"\"}",
+          "interval": "",
+          "legendFormat": "{{pod}} - {{container}}",
+          "refId": "A"
+        }
+      ],
+      "title": "🧠 애플리케이션 메모리 사용량",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "datasource": null,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 16
+      },
+      "id": 102,
+      "panels": [],
+      "title": "📊 Pod 상태 및 재시작 정보",
+      "type": "row"
+    },
+    {
+      "datasource": "Prometheus",
+      "description": "각 애플리케이션별 Pod 상태 및 재시작 횟수",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {
+            "align": "auto",
+            "displayMode": "color-background"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "green",
+                  "index": 0,
+                  "text": "안정"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "from": 1,
+                "result": {
+                  "color": "yellow",
+                  "index": 1
+                },
+                "to": 5
+              },
+              "type": "range"
+            },
+            {
+              "options": {
+                "from": 6,
+                "result": {
+                  "color": "red",
+                  "index": 2
+                },
+                "to": 100
+              },
+              "type": "range"
+            }
+          ],
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 17
+      },
+      "id": 7,
+      "options": {
+        "showHeader": true,
+        "sortBy": [
+          {
+            "desc": true,
+            "displayName": "재시작 횟수"
+          }
+        ]
+      },
+      "pluginVersion": "8.3.0",
+      "targets": [
+        {
+          "expr": "kube_pod_container_status_restarts_total{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\"}",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        },
+        {
+          "expr": "kube_pod_status_phase{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\"}",
+          "format": "table",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "",
+          "refId": "B"
+        }
+      ],
+      "title": "🔄 Pod 재시작 및 상태 테이블",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "job": true,
+              "__name__": true,
+              "namespace": true,
+              "uid": true
+            },
+            "indexByName": {},
+            "renameByName": {
+              "container": "컨테이너",
+              "pod": "Pod 이름",
+              "Value #A": "재시작 횟수",
+              "Value #B": "Phase 상태",
+              "phase": "Phase"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 27,
+  "style": "dark",
+  "tags": ["kubernetes", "applications", "monitoring"],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "🎯 애플리케이션 모니터링 (Pod 기반)",
+  "uid": "application-overview",
+  "version": 1
+}
