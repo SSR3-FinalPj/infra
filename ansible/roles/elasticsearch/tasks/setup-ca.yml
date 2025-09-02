@@ -1,0 +1,42 @@
+- name: Create local directory for certificates
+  ansible.builtin.file:
+    path: /tmp/es-certs
+    state: directory
+  delegate_to: localhost
+  run_once: true
+
+- name: Generate Elasticsearch CA certificate locally
+  ansible.builtin.command: >
+    docker run --rm
+    -v /tmp/es-certs:/certs
+    -e CA_PASSWORD={{ vault_elastic_ca_password | default('elasticsearch-ca-password') }}
+    docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+    /bin/bash -c "
+      set -e
+      cd /certs
+      if [ ! -f elastic-stack-ca.p12 ]; then
+        /usr/share/elasticsearch/bin/elasticsearch-certutil ca --silent --pass \"${CA_PASSWORD}\" --out elastic-stack-ca.p12
+      fi
+    "
+  delegate_to: localhost
+  run_once: true
+
+- name: Check if CA file was created
+  ansible.builtin.stat:
+    path: /tmp/es-certs/elastic-stack-ca.p12
+  delegate_to: localhost
+  run_once: true
+  register: ca_file_stat
+
+- name: Fail if CA file does not exist
+  ansible.builtin.fail:
+    msg: "The CA certificate file was not found at /tmp/es-certs/elastic-stack-ca.p12 after attempting to generate it. Please check Docker permissions and ensure the 'docker.elastic.co/elasticsearch/elasticsearch:8.13.4' image can be pulled."
+  when: not ca_file_stat.stat.exists
+  delegate_to: localhost
+  run_once: true
+
+- name: Create Elasticsearch CA secret in Kubernetes
+  community.kubernetes.k8s:
+    state: present
+    template: 'es-ca-secret.yaml.j2'
+    namespace: '{{ dev_namespace }}'

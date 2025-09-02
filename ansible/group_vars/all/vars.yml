@@ -8,8 +8,8 @@
 # ==============================================
 # Application Configuration
 # ==============================================
-# 애플리케이션이 배포될 네임스페이스
-app_namespace: dev-system
+# 애플리케이션이 배포될 dev 네임스페이스
+dev_namespace: dev-system
 
 # 기본 도메인 (모든 서비스의 base domain)
 base_domain: sos-k8s.kro.kr
@@ -21,34 +21,34 @@ base_domain: sos-k8s.kro.kr
 postgres_user: postgres
 postgres_db: postgres
 postgres_port: 5432
-postgres_image: "postgres:13.22-alpine"
+postgres_image: 'postgres:13.22-alpine'
 
 # Airflow PostgreSQL 사용자
 airflow_db_user: airflow
 airflow_db_name: airflow
 airflow_db_password: airflow
 
-# MySQL 설정  
+# MySQL 설정
 mysql_port: 3306
-mysql_image: "mysql:8.0"
+mysql_image: 'mysql:8.0'
 mysql_database: redmine
 
 # ==============================================
 # Container Images & Versions
 # ==============================================
-redis_image: "redis:7-alpine"
-elasticsearch_image: "docker.elastic.co/elasticsearch/elasticsearch:7.17.0"
-kibana_image: "docker.elastic.co/kibana/kibana:7.17.0"
-redmine_image: "redmine"
+redis_image: 'redis:7-alpine'
+elasticsearch_image: 'docker.elastic.co/elasticsearch/elasticsearch:7.17.0'
+kibana_image: 'docker.elastic.co/kibana/kibana:7.17.0'
+redmine_image: 'redmine'
 
 # ==============================================
 # Resource Limits (예시)
 # ==============================================
 # 필요에 따라 컨테이너 리소스 제한 설정
-default_memory_limit: "1Gi"
-default_cpu_limit: "1000m"
-default_memory_request: "512Mi" 
-default_cpu_request: "500m"
+default_memory_limit: '1Gi'
+default_cpu_limit: '1000m'
+default_memory_request: '512Mi'
+default_cpu_request: '500m'
 
 # ==============================================
 # Feature Flags (예시)
@@ -57,7 +57,6 @@ default_cpu_request: "500m"
 enable_monitoring: true
 enable_logging: true
 enable_backup: false
-
 # ==============================================
 # 참고사항
 # ==============================================

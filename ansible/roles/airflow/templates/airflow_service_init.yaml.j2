@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: airflow-service-init
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   template:
     spec:

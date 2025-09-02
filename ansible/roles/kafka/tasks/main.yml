@@ -5,7 +5,7 @@
   kubernetes.core.k8s:
     state: absent
     src: '{{ item }}'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
   loop:
     - 'templates/kafka-ui.yaml'
     - 'templates/kafka.yaml'
@@ -17,22 +17,22 @@
   kubernetes.core.k8s:
     state: present
     src: 'templates/kafka-pdb.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Deploy Kafka Client Service
   kubernetes.core.k8s:
     state: present
     src: 'templates/kafka-cs.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Deploy Kafka StatefulSet
   kubernetes.core.k8s:
     state: present
     src: 'templates/kafka.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Deploy Kafka UI
   kubernetes.core.k8s:
     state: present
     src: 'templates/kafka-ui.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'

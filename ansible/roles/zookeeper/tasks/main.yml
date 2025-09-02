@@ -5,7 +5,7 @@
   kubernetes.core.k8s:
     state: absent
     src: '{{ item }}'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
   loop:
     - 'templates/zk.yaml'
     - 'templates/zk-svc.yaml'
@@ -17,22 +17,22 @@
   kubernetes.core.k8s:
     state: present
     src: 'templates/zk-configmap.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Deploy Zookeeper PodDisruptionBudget
   kubernetes.core.k8s:
     state: present
     src: 'templates/zk-pdb.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Deploy Zookeeper Service
   kubernetes.core.k8s:
     state: present
     src: 'templates/zk-svc.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Deploy Zookeeper StatefulSet
   kubernetes.core.k8s:
     state: present
     src: 'templates/zk.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'

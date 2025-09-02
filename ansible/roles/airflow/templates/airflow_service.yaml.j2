@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: airflow-service-config
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 data:
   pod_template.yaml: |
     apiVersion: v1
@@ -94,7 +94,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: airflow-service-webserver
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   selector:
     app: airflow-service-webserver
@@ -108,7 +108,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: airflow-service-webserver
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   replicas: 1
   selector:
@@ -176,7 +176,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: airflow-service-scheduler
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   replicas: 1
   selector:

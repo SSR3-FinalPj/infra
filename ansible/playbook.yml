@@ -26,6 +26,8 @@
       tags: elastic-hq
     - role: prometheus
       tags: prometheus
+    - role: zipkin
+      tags: zipkin
     - role: portainer
       tags: portainer
     - role: ingress

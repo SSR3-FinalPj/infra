@@ -101,7 +101,7 @@
       "pluginVersion": "8.3.0",
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"kafka-.*\",phase=\"Running\"})",
+          "expr": "count(kube_pod_status_phase{namespace=\"'{{ dev_namespace }}'\",pod=~\"kafka-.*\",phase=\"Running\"})",
           "interval": "",
           "legendFormat": "Running Pods",
           "refId": "A"
@@ -178,7 +178,7 @@
       "pluginVersion": "8.3.0",
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"redis-.*|.*redis.*\",phase=\"Running\"})",
+          "expr": "count(kube_pod_status_phase{namespace=\"'{{ dev_namespace }}'\",pod=~\"redis-.*|.*redis.*\",phase=\"Running\"})",
           "interval": "",
           "legendFormat": "Running Pods",
           "refId": "A"
@@ -259,7 +259,7 @@
       "pluginVersion": "8.3.0",
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"elasticsearch-.*\",phase=\"Running\"})",
+          "expr": "count(kube_pod_status_phase{namespace=\"'{{ dev_namespace }}'\",pod=~\"elasticsearch-.*\",phase=\"Running\"})",
           "interval": "",
           "legendFormat": "Running Pods",
           "refId": "A"
@@ -336,7 +336,7 @@
       "pluginVersion": "8.3.0",
       "targets": [
         {
-          "expr": "count(kube_pod_status_phase{namespace=\"dev-system\",pod=~\"postgresql-.*\",phase=\"Running\"})",
+          "expr": "count(kube_pod_status_phase{namespace=\"'{{ dev_namespace }}'\",pod=~\"postgresql-.*\",phase=\"Running\"})",
           "interval": "",
           "legendFormat": "Running Pods",
           "refId": "A"
@@ -427,7 +427,7 @@
       },
       "targets": [
         {
-          "expr": "rate(container_cpu_usage_seconds_total{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\",container!=\"POD\",container!=\"\"}[5m]) * 100",
+          "expr": "rate(container_cpu_usage_seconds_total{namespace=\"'{{ dev_namespace }}'\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\",container!=\"POD\",container!=\"\"}[5m]) * 100",
           "interval": "",
           "legendFormat": "{{pod}} - {{container}}",
           "refId": "A"
@@ -504,7 +504,7 @@
       },
       "targets": [
         {
-          "expr": "container_memory_working_set_bytes{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\",container!=\"POD\",container!=\"\"}",
+          "expr": "container_memory_working_set_bytes{namespace=\"'{{ dev_namespace }}'\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\",container!=\"POD\",container!=\"\"}",
           "interval": "",
           "legendFormat": "{{pod}} - {{container}}",
           "refId": "A"
@@ -610,7 +610,7 @@
       "pluginVersion": "8.3.0",
       "targets": [
         {
-          "expr": "kube_pod_container_status_restarts_total{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\"}",
+          "expr": "kube_pod_container_status_restarts_total{namespace=\"'{{ dev_namespace }}'\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\"}",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -618,7 +618,7 @@
           "refId": "A"
         },
         {
-          "expr": "kube_pod_status_phase{namespace=\"dev-system\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\"}",
+          "expr": "kube_pod_status_phase{namespace=\"'{{ dev_namespace }}'\",pod=~\"kafka-.*|redis-.*|elasticsearch-.*|postgresql-.*\"}",
           "format": "table",
           "instant": true,
           "interval": "",

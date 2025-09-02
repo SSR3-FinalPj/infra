@@ -5,4 +5,4 @@
   kubernetes.core.k8s:
     state: present
     src: 'templates/elastic-hq.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'

@@ -6,7 +6,7 @@
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/portainer/templates/portainer.yaml'
 
@@ -14,19 +14,19 @@
       kubernetes.core.k8s:
         state: absent
         src: 'roles/prometheus/templates/servicemonitors.yaml'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
 
     - name: 'Delete Elastic-HQ resources'
       kubernetes.core.k8s:
         state: absent
         src: 'roles/elastic-hq/templates/elastic-hq.yaml'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
 
     - name: 'Delete Kibana resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/kibana/templates/kibana.yaml'
         - 'roles/kibana/templates/kibana-configmap.yaml'
@@ -35,7 +35,7 @@
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/elasticsearch/templates/es-master.yaml'
         - 'roles/elasticsearch/templates/es-master-cs.yaml'
@@ -51,7 +51,7 @@
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/redis/templates/redis-sentinel-service.yaml'
         - 'roles/redis/templates/redis-sentinel-controller.yaml'
@@ -64,7 +64,7 @@
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/adminer/templates/adminer.yaml'
         - 'roles/adminer/templates/adminer-configmap.yaml'
@@ -73,7 +73,7 @@
     #   kubernetes.core.k8s:
     #     state: absent
     #     src: "{{ item }}"
-    #     namespace: dev-system
+    #     namespace: '{{ dev_namespace }}'
     #   loop:
     #     - "roles/airflow/templates/token_updater_deployment.yaml.j2"
     #     - "roles/airflow/templates/pod_template.yaml.j2"
@@ -86,13 +86,13 @@
       kubernetes.core.k8s:
         state: absent
         src: 'roles/postgresql/templates/postgresql.yaml'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
 
     - name: 'Delete Kafka resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/kafka/templates/kafka-ui.yaml'
         - 'roles/kafka/templates/kafka.yaml'
@@ -103,7 +103,7 @@
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/zookeeper/templates/zk.yaml'
         - 'roles/zookeeper/templates/zk-svc.yaml'
@@ -123,7 +123,7 @@
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/storage/templates/storageClass.yaml'
         - 'roles/storage/templates/createpv.yaml.j2'
