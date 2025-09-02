@@ -2,12 +2,21 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: internal-ingress
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
   annotations:
+    ############################################################
+    ###### internal alb로 설정 시 아래 주석 해제 (with Client VPN) ######
+    ############################################################
     alb.ingress.kubernetes.io/scheme: internal
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
     alb.ingress.kubernetes.io/subnets: {{ private_subnet_ids.value | join(',') }} # Internal ALB를 배치할 Private Subnet ID
+    #####################################################
+    ###### internet-facing alb로 설정 시 아래 주석 해제 ######
+    #####################################################
+    # alb.ingress.kubernetes.io/scheme: internet-facing
+    # alb.ingress.kubernetes.io/target-type: ip
+    # alb.ingress.kubernetes.io/subnets: {{ public_subnet_ids.value | join(',') }} # External ALB를 배치할 Public Subnet ID
 spec:
   ingressClassName: alb
   rules:

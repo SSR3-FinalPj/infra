@@ -6,7 +6,7 @@
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/airflow/templates/token_updater_deployment.yaml.j2'
         - 'roles/airflow/templates/pod_template.yaml.j2'
@@ -19,4 +19,4 @@
     #   kubernetes.core.k8s:
     #     state: absent
     #     src: "roles/postgresql/templates/postgresql.yaml"
-    #     namespace: dev-system
+    #     namespace: '{{ dev_namespace }}'

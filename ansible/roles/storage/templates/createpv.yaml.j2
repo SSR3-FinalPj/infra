@@ -24,7 +24,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: kafka-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -62,7 +62,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-master-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -100,7 +100,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-master-config-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -135,7 +135,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-master-data-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -170,7 +170,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-master-logs-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -208,7 +208,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-data1-config-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -243,7 +243,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-data1-data-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -278,7 +278,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-data1-logs-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -316,7 +316,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-data2-config-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -351,7 +351,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-data2-data-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -386,7 +386,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: es-data2-logs-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -424,7 +424,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: kibana-config-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -459,7 +459,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: kibana-data-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -497,7 +497,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgre-data-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany
@@ -516,7 +516,7 @@ apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: mysql-pv
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
   labels:
     type: mysql-pv
 spec:
@@ -535,7 +535,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: mysql-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteOnce
@@ -572,7 +572,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: dags-pvc
-  namespace: dev-system
+  namespace: '{{ dev_namespace }}'
 spec:
   accessModes:
     - ReadWriteMany

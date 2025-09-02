@@ -37,13 +37,13 @@ prometheus:
           - targets: ['kafka-0.kafka-headless.dev-system:9999']
         scrape_interval: 30s
         metrics_path: /metrics
-      
+
       # Redis metrics (if redis_exporter is deployed)
       - job_name: 'redis'
         static_configs:
           - targets: ['redis-exporter.dev-system:9121']
         scrape_interval: 30s
-        
+
       # Custom application metrics
       - job_name: 'kubernetes-services'
         kubernetes_sd_configs:
@@ -61,7 +61,7 @@ grafana:
   enabled: true
   adminUser: admin
   adminPassword: grafana163
-  
+
   # Resource limits
   resources:
     requests:
@@ -70,11 +70,11 @@ grafana:
     limits:
       memory: 256Mi
       cpu: 200m
-  
+
   # Persistence disabled (as requested)
   persistence:
     enabled: false
-  
+
   # Grafana configuration
   grafana.ini:
     server:
@@ -92,7 +92,7 @@ grafana:
     analytics:
       check_for_updates: false
       reporting_enabled: false
-  
+
   # Additional data sources
   additionalDataSources:
     - name: PostgreSQL
@@ -125,35 +125,35 @@ grafana:
     dashboardproviders.yaml:
       apiVersion: 1
       providers:
-      - name: 'kubernetes-monitoring'
-        orgId: 1
-        folder: 'Kubernetes Monitoring'
-        folderUid: 'k8s-monitoring'
-        type: file
-        disableDeletion: false
-        editable: true
-        updateIntervalSeconds: 10
-        allowUiUpdates: true
-        options:
-          path: /var/lib/grafana/dashboards/kubernetes-monitoring
-      - name: 'application-monitoring'
-        orgId: 1
-        folder: 'Application Monitoring'
-        folderUid: 'app-monitoring'
-        type: file
-        disableDeletion: false
-        editable: true
-        updateIntervalSeconds: 10
-        allowUiUpdates: true
-        options:
-          path: /var/lib/grafana/dashboards/application-monitoring
-  
+        - name: 'kubernetes-monitoring'
+          orgId: 1
+          folder: 'Kubernetes Monitoring'
+          folderUid: 'k8s-monitoring'
+          type: file
+          disableDeletion: false
+          editable: true
+          updateIntervalSeconds: 10
+          allowUiUpdates: true
+          options:
+            path: /var/lib/grafana/dashboards/kubernetes-monitoring
+        - name: 'application-monitoring'
+          orgId: 1
+          folder: 'Application Monitoring'
+          folderUid: 'app-monitoring'
+          type: file
+          disableDeletion: false
+          editable: true
+          updateIntervalSeconds: 10
+          allowUiUpdates: true
+          options:
+            path: /var/lib/grafana/dashboards/application-monitoring
+
   # ConfigMap으로부터 대시보드 자동 로딩 (sidecar)
   sidecar:
     dashboards:
       enabled: true
       label: grafana_dashboard
-      labelValue: "1" 
+      labelValue: '1'
       folder: /tmp/dashboards
       folderAnnotation: grafana_folder
       searchNamespace: dev-system
@@ -173,7 +173,7 @@ grafana:
       # Kubernetes Cluster Monitoring
       kubernetes-cluster-monitoring:
         gnetId: 7249
-        revision: 1  
+        revision: 1
         datasource: Prometheus
     application-monitoring:
       # Redis Dashboard
@@ -181,7 +181,7 @@ grafana:
         gnetId: 763
         revision: 4
         datasource: Prometheus
-      # PostgreSQL Dashboard  
+      # PostgreSQL Dashboard
       postgresql-overview:
         gnetId: 9628
         revision: 7
@@ -255,4 +255,3 @@ defaultRules:
     nodeExporterRecording: true
     prometheus: true
     prometheusOperator: true
-

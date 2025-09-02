@@ -11,7 +11,7 @@
     api_version: batch/v1
     kind: Job
     name: airflow-service-init
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
     state: absent
     wait: yes
 
@@ -39,7 +39,7 @@
   kubernetes.core.k8s:
     kind: Pod
     name: airflow-worker-pod-template
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
     state: absent
 
 - name: Apply Pod Template
