@@ -19,7 +19,7 @@ base_domain: sos-k8s.kro.kr
 # ==============================================
 # PostgreSQL 설정
 postgres_user: postgres
-postgres_db: postgres
+postgres_db: youtube_db
 postgres_port: 5432
 postgres_image: 'postgres:13.22-alpine'
 

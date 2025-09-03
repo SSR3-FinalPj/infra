@@ -100,13 +100,13 @@ spec:
                 name: monitoring-kube-prometheus-alertmanager
                 port:
                   number: 80
-    - host: redmine.{{ base_domain }}
+    - host: zipkin.{{ base_domain }}
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: redmine
+                name: zipkin
                 port:
                   number: 80

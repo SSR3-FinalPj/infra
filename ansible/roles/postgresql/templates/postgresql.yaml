@@ -50,11 +50,11 @@ spec:
           image: postgres:13.22-alpine
           env:
             - name: POSTGRES_USER
-              value: postgres
+              value: '{{ postgres_user }}'
             - name: POSTGRES_PASSWORD
               value: '{{ vault_postgres_password }}'
             - name: POSTGRES_DB
-              value: postgres
+              value: '{{ postgres_db }}'
             - name: PGDATA
               value: /var/lib/postgresql/data
             - name: TZ

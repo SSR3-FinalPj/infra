@@ -5,11 +5,11 @@ metadata:
   name: adminer-postgres-secret
 type: Opaque
 data:
-  postgres-host: cG9zdGdyZXM= # postgres (base64 encoded)
-  postgres-port: NTQzMg== # 5432 (base64 encoded)
-  postgres-user: cG9zdGdyZXM= # postgres (base64 encoded)
-  postgres-password: ZXhhbXBsZQ== # example (base64 encoded)
-  postgres-db: cG9zdGdyZXM= # postgres (base64 encoded)
+  postgres-host: "{{ 'postgres' | b64encode }}"
+  postgres-port: '{{ postgres_port | b64encode }}'
+  postgres-user: '{{ postgres_user | b64encode }}'
+  postgres-password: '{{ vault_postgres_password | b64encode }}'
+  postgres-db: '{{ postgres_db | b64encode }}'
 ---
 apiVersion: apps/v1
 kind: Deployment
