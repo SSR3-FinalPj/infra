@@ -2,16 +2,16 @@
 - hosts: localhost
   gather_facts: no
   roles:
-    - role: csi-drivers
-      tags: csi-drivers
-    - role: alb-controller
-      tags: alb-controller
-    - role: storage
-      tags: storage
-    - role: zookeeper
-      tags: zookeeper
-    - role: kafka
-      tags: kafka
+    # - role: csi-drivers
+    #   tags: csi-drivers
+    # - role: alb-controller
+    #   tags: alb-controller
+    # - role: storage
+    #   tags: storage
+    # - role: zookeeper
+    #   tags: zookeeper
+    # - role: kafka
+    #   tags: kafka
     - role: postgresql
       tags: postgresql
     - role: adminer

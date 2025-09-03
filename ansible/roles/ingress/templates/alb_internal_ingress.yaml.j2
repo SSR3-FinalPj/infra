@@ -110,3 +110,13 @@ spec:
                 name: zipkin
                 port:
                   number: 80
+    - host: aiserver.{{ base_domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bridge
+                port:
+                  number: 80

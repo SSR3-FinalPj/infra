@@ -46,7 +46,7 @@
     namespace: '{{ dev_namespace }}'
     pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -c "CREATE ROLE airflow LOGIN PASSWORD '{{ vault_airflow_password }}';"
-  when: airflow_user_check.stdout.strip() == ""
+  when: "'1' not in airflow_user_check.stdout"
   register: airflow_user_result
 
 - name: Update Airflow user password if user already exists
@@ -54,7 +54,7 @@
     namespace: '{{ dev_namespace }}'
     pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: 'psql -U postgres -c "ALTER ROLE airflow WITH PASSWORD ''{{ vault_airflow_password }}'';"'
-  when: airflow_user_check.stdout.strip() != ""
+  when: "'1' in airflow_user_check.stdout"
   changed_when: false
 
 - name: Check if Airflow database exists
@@ -70,7 +70,7 @@
     namespace: '{{ dev_namespace }}'
     pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -c "CREATE DATABASE airflow OWNER airflow;"
-  when: airflow_db_check.stdout.strip() == ""
+  when: "'1' not in airflow_db_check.stdout"
   register: airflow_db_result
 
 - name: Grant privileges to Airflow user

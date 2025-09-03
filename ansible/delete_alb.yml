@@ -30,31 +30,31 @@
         - 'roles/ingress/templates/alb_internal_ingress.yaml.j2'
         - 'roles/ingress/templates/alb_external_ingress.yaml.j2'
 
-    # - name: 'Delete ALB Controller resources'
-    #   block:
-    #     - name: Delete IngressClass
-    #       kubernetes.core.k8s:
-    #         state: absent
-    #         definition: "{{ lookup('template', 'roles/alb-controller/templates/ingress-class.yaml.j2') }}"
+    - name: 'Delete ALB Controller resources'
+      block:
+        - name: Delete IngressClass
+          kubernetes.core.k8s:
+            state: absent
+            definition: "{{ lookup('template', 'roles/alb-controller/templates/ingress-class.yaml.j2') }}"
 
-    #     - name: Uninstall AWS Load Balancer Controller Helm chart
-    #       kubernetes.core.helm:
-    #         name: aws-load-balancer-controller
-    #         state: absent
-    #         release_namespace: kube-system
+        - name: Uninstall AWS Load Balancer Controller Helm chart
+          kubernetes.core.helm:
+            name: aws-load-balancer-controller
+            state: absent
+            release_namespace: kube-system
 
-    #     - name: Uninstall Cert-Manager Helm chart
-    #       kubernetes.core.helm:
-    #         name: cert-manager
-    #         state: absent
-    #         release_namespace: cert-manager
+        - name: Uninstall Cert-Manager Helm chart
+          kubernetes.core.helm:
+            name: cert-manager
+            state: absent
+            release_namespace: cert-manager
 
-    #     - name: Remove the EKS Helm chart repository
-    #       kubernetes.core.helm_repository:
-    #         name: aws
-    #         state: absent
+        - name: Remove the EKS Helm chart repository
+          kubernetes.core.helm_repository:
+            name: aws
+            state: absent
 
-    #     - name: Remove the Jetstack Helm repository
-    #       kubernetes.core.helm_repository:
-    #         name: jetstack
-    #         state: absent
+        - name: Remove the Jetstack Helm repository
+          kubernetes.core.helm_repository:
+            name: jetstack
+            state: absent
