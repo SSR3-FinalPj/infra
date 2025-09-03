@@ -4,8 +4,16 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: zipkin
+  labels:
+    app: zipkin
+    version: v1
 spec:
-  replicas: 1
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: zipkin
@@ -13,22 +21,81 @@ spec:
     metadata:
       labels:
         app: zipkin
+        version: v1
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9411"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
         - name: zipkin
-          image: openzipkin/zipkin:latest
+          image: openzipkin/zipkin:3.4
           ports:
-            - containerPort: 9411
+            - name: http
+              containerPort: 9411
+              protocol: TCP
+            - name: actuator
+              containerPort: 9412
+              protocol: TCP
           resources:
             requests:
-              memory: '512Mi'
+              memory: '1Gi'
               cpu: '500m'
             limits:
-              memory: '1Gi'
+              memory: '2Gi'
               cpu: '1'
           env:
+            # Elasticsearch 저장소 설정
             - name: STORAGE_TYPE
-              value: 'mem' # 메모리 기반 스토리지 사용 (필요 시 cassandra, elasticsearch 등으로 변경)
+              value: 'elasticsearch'
+            - name: ES_HOSTS
+              value: 'http://elasticsearch-master-cs:9200'
+            - name: ES_INDEX_REPLICAS
+              value: '1'
+            - name: ES_INDEX_SHARDS  
+              value: '3'
+            - name: ES_USERNAME
+              value: ''  # 필요 시 설정
+            - name: ES_PASSWORD
+              value: ''  # 필요 시 설정
+            
+            # Java 최적화 설정
+            - name: JAVA_OPTS
+              value: '-Xms1g -Xmx1g -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:+UseStringDeduplication'
+              
+            # 메트릭 및 모니터링 설정
+            - name: ACTUATOR_ENABLED
+              value: 'true'
+            - name: METRICS_ENDPOINT
+              value: '/actuator/prometheus'
+              
+            # 성능 튜닝
+            - name: COLLECTOR_SAMPLE_RATE
+              value: '1.0'  # 모든 트레이스 수집 (프로덕션에서는 0.1 등으로 조정)
+            - name: QUERY_TIMEOUT
+              value: '11000'  # 11초
+            - name: QUERY_LOOKBACK
+              value: '86400000'  # 1일 (밀리초)
+          
+          # Health Check 설정
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 9411
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 9411
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
 ---
 apiVersion: v1
 kind: Service

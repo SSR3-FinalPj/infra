@@ -15,10 +15,10 @@ data:
     - **Server**: `postgres`
     - **Username**: `postgres` 
     - **Password**: `example`
-    - **Database**: `postgres` (default) or `airflow`
+    - **Database**: `youtube_db` (default) or `airflow`
 
     ## Available Databases
-    - `postgres` - Default PostgreSQL database
+    - `youtube_db` - Default PostgreSQL database
     - `airflow` - Airflow application database (if configured)
 
     ## Access Information
