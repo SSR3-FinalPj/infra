@@ -59,7 +59,7 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: portainer-sa-clusteradmin
-    namespace: '{{ dev_namespace }}'
+    namespace: dev-system
 ---
 apiVersion: v1
 kind: Service
