@@ -25,6 +25,8 @@ spec:
             - redis-server
             - '--save 60 1'
             - '--loglevel warning'
+            - '--protected-mode no'
+            - '--bind 0.0.0.0'
           env:
             - name: MASTER
               value: 'true'

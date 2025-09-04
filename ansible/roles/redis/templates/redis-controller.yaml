@@ -23,6 +23,10 @@ spec:
       containers:
         - name: redis
           image: redis:8.2.1-alpine
+          command:
+            - redis-server
+            - '--protected-mode no'
+            - '--bind 0.0.0.0'
           env:
             - name: TZ
               value: Asia/Seoul
