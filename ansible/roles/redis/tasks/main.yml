@@ -7,7 +7,7 @@
     src: 'templates/redis-pvc.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Redis Master Client Service
+- name: Deploy Redis Service
   kubernetes.core.k8s:
     state: present
     src: 'templates/redis-master-cs.yaml'
@@ -17,22 +17,4 @@
   kubernetes.core.k8s:
     state: present
     src: 'templates/redis-master.yaml'
-    namespace: '{{ dev_namespace }}'
-
-- name: Deploy Redis Sentinel Service
-  kubernetes.core.k8s:
-    state: present
-    src: 'templates/redis-sentinel-service.yaml'
-    namespace: '{{ dev_namespace }}'
-
-- name: Deploy Redis Controller
-  kubernetes.core.k8s:
-    state: present
-    src: 'templates/redis-controller.yaml'
-    namespace: '{{ dev_namespace }}'
-
-- name: Deploy Redis Sentinel Controller
-  kubernetes.core.k8s:
-    state: present
-    src: 'templates/redis-sentinel-controller.yaml'
     namespace: '{{ dev_namespace }}'

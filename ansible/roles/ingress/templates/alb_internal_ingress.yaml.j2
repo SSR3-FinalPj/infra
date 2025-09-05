@@ -110,6 +110,16 @@ spec:
                 name: zipkin
                 port:
                   number: 80
+    - host: argocd.{{ base_domain }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: argocd-server
+                port:
+                  number: 80
     - host: aiserver.{{ base_domain }}
       http:
         paths:
