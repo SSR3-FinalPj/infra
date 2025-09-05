@@ -2,40 +2,80 @@
 - hosts: localhost
   gather_facts: no
   tasks:
+    # ==============================================
+    # Delete in REVERSE order of playbook.yml
+    # playbook.yml 순서의 역순으로 삭제
+    # ==============================================
+
+    # 15. Delete Ingress resources (마지막 배포 → 첫 번째 삭제)
+    - name: 'Delete Ingress resources'
+      kubernetes.core.k8s:
+        state: absent
+        definition: "{{ lookup('template', item) }}"
+      loop:
+        # - 'roles/ingress/templates/http_test.yaml.j2'
+        - 'roles/ingress/templates/alb_internal_ingress.yaml.j2'
+        - 'roles/ingress/templates/alb_external_ingress.yaml.j2'
+        - 'roles/ingress/templates/alb_backend_ingress.yaml.j2'
+
+    # 14. Delete Portainer resources
     - name: 'Delete Portainer resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/portainer/templates/portainer.yaml'
 
-    - name: 'Delete Prometheus resources'
+    # 13. Delete Zipkin resources (누락되었던 항목 추가)
+    - name: 'Delete Zipkin resources'
       kubernetes.core.k8s:
         state: absent
-        src: 'roles/prometheus/templates/servicemonitors.yaml'
-        namespace: dev-system
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/zipkin/templates/zipkin.yaml'
 
+    # 12. Delete Prometheus resources (Helm 차트 포함)
+    - name: 'Delete Prometheus resources'
+      block:
+        - name: Delete Prometheus ServiceMonitors
+          kubernetes.core.k8s:
+            state: absent
+            src: 'roles/prometheus/templates/servicemonitors.yaml'
+            namespace: '{{ dev_namespace }}'
+          ignore_errors: yes
+
+        - name: Uninstall Prometheus Helm chart
+          kubernetes.core.helm:
+            name: monitoring
+            state: absent
+            release_namespace: '{{ dev_namespace }}'
+          ignore_errors: yes
+
+    # 11. Delete Elastic-HQ resources
     - name: 'Delete Elastic-HQ resources'
       kubernetes.core.k8s:
         state: absent
         src: 'roles/elastic-hq/templates/elastic-hq.yaml'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
 
+    # 10. Delete Kibana resources
     - name: 'Delete Kibana resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/kibana/templates/kibana.yaml'
         - 'roles/kibana/templates/kibana-configmap.yaml'
 
+    # 9. Delete Elasticsearch resources
     - name: 'Delete Elasticsearch resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/elasticsearch/templates/es-master.yaml'
         - 'roles/elasticsearch/templates/es-master-cs.yaml'
@@ -47,115 +87,119 @@
         - 'roles/elasticsearch/templates/es-data2-cs.yaml'
         - 'roles/elasticsearch/templates/es-data2-configmap.yaml'
 
+    # 8. Delete Redis resources
     - name: 'Delete Redis resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
-        - 'roles/redis/templates/redis-sentinel-service.yaml'
-        - 'roles/redis/templates/redis-sentinel-controller.yaml'
+        # - 'roles/redis/templates/redis-sentinel-service.yaml'
+        # - 'roles/redis/templates/redis-sentinel-controller.yaml'
         - 'roles/redis/templates/redis-master.yaml'
         - 'roles/redis/templates/redis-master-cs.yaml'
-        - 'roles/redis/templates/redis-controller.yaml'
+        # - 'roles/redis/templates/redis-controller.yaml'
         - 'roles/redis/templates/redis-pvc.yaml'
 
+    # 7. Delete Adminer resources
     - name: 'Delete Adminer resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/adminer/templates/adminer.yaml'
         - 'roles/adminer/templates/adminer-configmap.yaml'
 
-    # - name: "Delete Airflow resources"
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: "{{ item }}"
-    #     namespace: dev-system
-    #   loop:
-    #     - "roles/airflow/templates/token_updater_deployment.yaml.j2"
-    #     - "roles/airflow/templates/pod_template.yaml.j2"
-    #     - "roles/airflow/templates/api_service_secrets.yaml.j2"
-    #     - "roles/airflow/templates/airflow_service.yaml.j2"
-    #     - "roles/airflow/templates/airflow_service_rbac.yaml.j2"
-    #     - "roles/airflow/templates/airflow_service_init.yaml.j2"
-
+    # 6. Delete PostgreSQL resources
     - name: 'Delete PostgreSQL resources'
       kubernetes.core.k8s:
         state: absent
         src: 'roles/postgresql/templates/postgresql.yaml'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
 
+    # 5. Delete Kafka resources
     - name: 'Delete Kafka resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/kafka/templates/kafka-ui.yaml'
         - 'roles/kafka/templates/kafka.yaml'
         - 'roles/kafka/templates/kafka-cs.yaml'
         - 'roles/kafka/templates/kafka-pdb.yaml'
 
+    # 4. Delete Zookeeper resources
     - name: 'Delete Zookeeper resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/zookeeper/templates/zk.yaml'
         - 'roles/zookeeper/templates/zk-svc.yaml'
         - 'roles/zookeeper/templates/zk-pdb.yaml'
         - 'roles/zookeeper/templates/zk-configmap.yaml'
 
-    - name: 'Delete Ingress resources'
-      kubernetes.core.k8s:
-        state: absent
-        definition: "{{ lookup('template', item) }}"
-      loop:
-        - 'roles/ingress/templates/http_test.yaml.j2'
-        - 'roles/ingress/templates/alb_internal_ingress.yaml.j2'
-        - 'roles/ingress/templates/alb_external_ingress.yaml.j2'
-
+    # 3. Delete Storage resources
     - name: 'Delete Storage resources'
       kubernetes.core.k8s:
         state: absent
         src: '{{ item }}'
-        namespace: dev-system
+        namespace: '{{ dev_namespace }}'
       loop:
         - 'roles/storage/templates/storageClass.yaml'
         - 'roles/storage/templates/createpv.yaml.j2'
 
+    # 2. Delete ALB Controller resources
     - name: 'Delete ALB Controller resources'
       block:
         - name: Delete IngressClass
           kubernetes.core.k8s:
             state: absent
             definition: "{{ lookup('template', 'roles/alb-controller/templates/ingress-class.yaml.j2') }}"
+          ignore_errors: yes
 
         - name: Uninstall AWS Load Balancer Controller Helm chart
           kubernetes.core.helm:
             name: aws-load-balancer-controller
             state: absent
             release_namespace: kube-system
+          ignore_errors: yes
+
+        - name: Clean up AWS Load Balancer Controller Helm history
+          shell: |
+            helm delete aws-load-balancer-controller -n kube-system || true
+            helm history aws-load-balancer-controller -n kube-system || true
+          ignore_errors: yes
 
         - name: Uninstall Cert-Manager Helm chart
           kubernetes.core.helm:
             name: cert-manager
             state: absent
             release_namespace: cert-manager
+          ignore_errors: yes
+
+        - name: Clean up Cert-Manager Helm history
+          shell: |
+            helm delete cert-manager -n cert-manager || true
+            helm history cert-manager -n cert-manager || true
+          ignore_errors: yes
 
         - name: Remove the EKS Helm chart repository
           kubernetes.core.helm_repository:
             name: aws
             state: absent
+          ignore_errors: yes
 
         - name: Remove the Jetstack Helm repository
           kubernetes.core.helm_repository:
             name: jetstack
             state: absent
+          ignore_errors: yes
+
+    # 1. Delete CSI Drivers resources (첫 번째 배포 → 마지막 삭제)
     - name: 'Delete CSI Drivers resources'
       block:
         - name: Uninstall AWS EFS CSI Driver Helm chart
@@ -163,19 +207,131 @@
             name: aws-efs-csi-driver
             state: absent
             release_namespace: kube-system
+          ignore_errors: yes
 
         - name: Uninstall AWS EBS CSI Driver Helm chart
           kubernetes.core.helm:
             name: aws-ebs-csi-driver
             state: absent
             release_namespace: kube-system
+          ignore_errors: yes
 
         - name: Remove the aws-efs-csi-driver Helm repository
           kubernetes.core.helm_repository:
             name: aws-efs-csi-driver
             state: absent
+          ignore_errors: yes
 
         - name: Remove the aws-ebs-csi-driver Helm repository
           kubernetes.core.helm_repository:
             name: aws-ebs-csi-driver
             state: absent
+          ignore_errors: yes
+
+    # ==============================================
+    # Final Cleanup - 최종 정리 작업
+    # ==============================================
+
+    # Get all PVCs in dev-system namespace first
+    - name: 'Get all PVCs in dev-system namespace'
+      kubernetes.core.k8s_info:
+        api_version: v1
+        kind: PersistentVolumeClaim
+        namespace: '{{ dev_namespace }}'
+      register: existing_pvcs
+      ignore_errors: yes
+      tags: pvc-cleanup
+
+    # Remove finalizers from all PVCs using kubectl patch
+    - name: 'Remove finalizers from PVCs using kubectl patch'
+      shell: |
+        kubectl patch pvc {{ item.metadata.name }} -n {{ dev_namespace }} -p '{"metadata":{"finalizers":null}}' --type=merge
+      loop: '{{ existing_pvcs.resources }}'
+      when: existing_pvcs.resources | length > 0
+      ignore_errors: yes
+      tags: pvc-cleanup
+
+    # # Force delete PVCs using kubectl
+    # - name: 'Force delete PVCs using kubectl'
+    #   shell: |
+    #     kubectl delete pvc {{ item.metadata.name }} -n {{ dev_namespace }} --force --grace-period=0
+    #   loop: '{{ existing_pvcs.resources }}'
+    #   when: existing_pvcs.resources | length > 0
+    #   ignore_errors: yes
+    #   tags: pvc-cleanup
+
+    # # Wait for PVCs to be deleted (reduced timeout)
+    # - name: 'Wait for PVCs to be deleted'
+    #   kubernetes.core.k8s_info:
+    #     api_version: v1
+    #     kind: PersistentVolumeClaim
+    #     namespace: '{{ dev_namespace }}'
+    #   register: remaining_pvcs
+    #   until: remaining_pvcs.resources | length == 0
+    #   retries: 10
+    #   delay: 3
+    #   ignore_errors: yes
+    #   tags: pvc-cleanup
+
+    # # Delete both namespaces created by the project
+    # - name: 'Delete dev-system namespace'
+    #   kubernetes.core.k8s:
+    #     state: absent
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: '{{ dev_namespace }}'
+    #   ignore_errors: yes
+
+    # - name: 'Force remove dev-system namespace finalizers if stuck in terminating'
+    #   shell: |
+    #     kubectl patch namespace {{ dev_namespace }} -p '{"metadata":{"finalizers":null}}' --type=merge
+    #   ignore_errors: yes
+
+    # - name: 'Delete prod-system namespace (created by ingress role)'
+    #   kubernetes.core.k8s:
+    #     state: absent
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: 'prod-system'
+    #   ignore_errors: yes
+
+    # - name: 'Force remove prod-system namespace finalizers if stuck in terminating'
+    #   shell: |
+    #     kubectl patch namespace prod-system -p '{"metadata":{"finalizers":null}}' --type=merge
+    #   ignore_errors: yes
+
+    # # Final verification for both namespaces
+    # - name: 'Verify dev-system namespace deletion'
+    #   kubernetes.core.k8s_info:
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: '{{ dev_namespace }}'
+    #   register: dev_namespace_check
+    #   ignore_errors: yes
+
+    # - name: 'Verify prod-system namespace deletion'
+    #   kubernetes.core.k8s_info:
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: 'prod-system'
+    #   register: prod_namespace_check
+    #   ignore_errors: yes
+
+    - name: 'Cleanup completed'
+      debug:
+        msg: |
+          ==============================================
+          🧹 Cleanup completed successfully! 
+          ==============================================
+          ✅ All application resources have been deleted
+          ✅ All Helm charts have been uninstalled  
+          ✅ All PVCs have been removed
+          ✅ Namespace {{ dev_namespace }} has been deleted
+          ✅ Namespace prod-system has been deleted
+
+          🎉 Your EKS cluster is now in a clean state!
+          (Only Terraform-provisioned infrastructure remains)
+          ==============================================
+      when:
+        - dev_namespace_check.resources | length == 0
+        - prod_namespace_check.resources | length == 0

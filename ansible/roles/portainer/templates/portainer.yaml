@@ -2,31 +2,29 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: portainer-admin-secret
-  namespace: dev-system
 type: Opaque
 data:
-  admin-user: YWRtaW4=  # admin (base64 encoded)
-  admin-password: cG9ydGFpbmVyMTIz  # portainer123 (base64 encoded)
+  admin-user: YWRtaW4= # admin (base64 encoded)
+  admin-password: cG9ydGFpbmVyMTIz # portainer123 (base64 encoded)
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: portainer-init-script
-  namespace: dev-system
 data:
   init-admin.sh: |
     #!/bin/sh
     set -e
-    
+
     echo "Waiting for Portainer to start..."
     until curl -f http://localhost:9000/api/status 2>/dev/null; do
       echo "Waiting for Portainer API..."
       sleep 3
     done
-    
+
     echo "Checking if admin user already exists..."
     STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:9000/api/users/admin/check)
-    
+
     if [ "$STATUS_CODE" = "404" ]; then
       echo "Creating initial admin user..."
       curl -X POST http://localhost:9000/api/users/admin/init \
@@ -39,7 +37,7 @@ data:
     else
       echo "Admin user already exists, skipping initialization"
     fi
-    
+
     echo "Initialization complete. Going to sleep..."
     while true; do
       sleep 3600
@@ -49,7 +47,6 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: portainer-sa-clusteradmin
-  namespace: dev-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -68,7 +65,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: portainer
-  namespace: dev-system
   labels:
     io.portainer.kubernetes.application.stack: portainer
 spec:
@@ -89,7 +85,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: portainer
-  namespace: dev-system
   labels:
     io.portainer.kubernetes.application.stack: portainer
 spec:
@@ -124,8 +119,8 @@ spec:
                 secretKeyRef:
                   name: portainer-admin-secret
                   key: admin-password
-          command: ["/bin/sh"]
-          args: ["/scripts/init-admin.sh"]
+          command: ['/bin/sh']
+          args: ['/scripts/init-admin.sh']
           volumeMounts:
             - name: init-scripts
               mountPath: /scripts

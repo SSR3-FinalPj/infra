@@ -14,17 +14,18 @@ spec:
     metadata:
       labels:
         component: redis-master
-        redis-sentinel: 'true'
     spec:
       #      nodeSelector:
       #        dsaas-redis-master: "true"
       containers:
         - name: master
-          image: redis:8.2.1-alpine
+          image: redis:latest
           command:
             - redis-server
             - '--save 60 1'
             - '--loglevel warning'
+            - '--protected-mode no'
+            - '--bind 0.0.0.0'
           env:
             - name: MASTER
               value: 'true'
@@ -44,7 +45,7 @@ spec:
       volumes:
         - name: redis-data
           persistentVolumeClaim:
-            claimName: redis-master-pvc
+            claimName: redis-data
         - name: timezone
           hostPath:
             path: /etc/localtime

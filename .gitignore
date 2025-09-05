@@ -107,3 +107,5 @@ CLAUDE.md
 # Any other custom sensitive files
 secrets/
 credentials/
+devops/
+backend/

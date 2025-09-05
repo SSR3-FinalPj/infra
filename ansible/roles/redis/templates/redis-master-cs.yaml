@@ -9,6 +9,6 @@ spec:
     component: redis-master
   ports:
     - protocol: 'TCP'
-      port: 80
+      port: 6379
       targetPort: 6379
   type: ClusterIP

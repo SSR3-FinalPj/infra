@@ -19,10 +19,10 @@
       spec:
         controller: ingress.k8s.aws/alb
 
-- name: Deploy test application for ALB Ingress
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'http_test.yaml.j2') }}"
+# - name: Deploy test application for ALB Ingress
+#   kubernetes.core.k8s:
+#     state: present
+#     definition: "{{ lookup('template', 'http_test.yaml.j2') }}"
 
 - name: Deploy External Ingress
   kubernetes.core.k8s:
@@ -33,3 +33,8 @@
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'alb_internal_ingress.yaml.j2') }}"
+
+- name: Deploy Backend Ingress
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'alb_backend_ingress.yaml.j2') }}"

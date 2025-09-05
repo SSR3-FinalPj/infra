@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: alb-test-app
-  namespace: prod-system
+  namespace: '{{ dev_namespace }}'
   labels:
     app: alb-test
 spec:

@@ -1,0 +1,8 @@
+---
+# roles/zipkin/tasks/main.yml
+
+- name: Deploy Zipkin Deployment
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/zipkin.yaml'
+    namespace: '{{ dev_namespace }}'

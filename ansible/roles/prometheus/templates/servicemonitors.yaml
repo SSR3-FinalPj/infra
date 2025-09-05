@@ -7,7 +7,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: postgresql-monitor
-  namespace: dev-system
   labels:
     app: postgresql
     component: database
@@ -25,7 +24,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: redis-monitor
-  namespace: dev-system
   labels:
     app: redis
     component: cache
@@ -43,7 +41,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: kafka-monitor
-  namespace: dev-system
   labels:
     app: kafka
     component: streaming
@@ -61,7 +58,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: elasticsearch-monitor
-  namespace: dev-system
   labels:
     app: elasticsearch
     component: search
@@ -79,7 +75,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: airflow-monitor
-  namespace: dev-system
   labels:
     app: airflow
     component: workflow
@@ -97,7 +92,6 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: kubernetes-services-monitor
-  namespace: dev-system
   labels:
     app: kubernetes-services
 spec:

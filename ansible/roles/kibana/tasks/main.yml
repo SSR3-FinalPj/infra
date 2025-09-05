@@ -5,10 +5,10 @@
   kubernetes.core.k8s:
     state: present
     src: 'templates/kibana-configmap.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Deploy Kibana Deployment
   kubernetes.core.k8s:
     state: present
     src: 'templates/kibana.yaml'
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'

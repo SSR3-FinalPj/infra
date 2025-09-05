@@ -1,0 +1,60 @@
+---
+- hosts: localhost
+  gather_facts: no
+  tasks:
+    # - name: 'Delete Airflow resources'
+    #   kubernetes.core.k8s:
+    #     state: absent
+    #     src: '{{ item }}'
+    #     namespace: '{{ dev_namespace }}'
+    #   loop:
+    #     - 'roles/airflow/templates/token_updater_deployment.yaml.j2'
+    #     - 'roles/airflow/templates/pod_template.yaml.j2'
+    #     - 'roles/airflow/templates/api_service_secrets.yaml.j2'
+    #     - 'roles/airflow/templates/airflow_service.yaml.j2'
+    #     - 'roles/airflow/templates/airflow_service_rbac.yaml.j2'
+    #     - 'roles/airflow/templates/airflow_service_init.yaml.j2'
+
+    # - name: "Delete PostgreSQL resources"
+    #   kubernetes.core.k8s:
+    #     state: absent
+    #     src: "roles/postgresql/templates/postgresql.yaml"
+    #     namespace: '{{ dev_namespace }}'
+
+    - name: 'Delete Ingress resources'
+      kubernetes.core.k8s:
+        state: absent
+        definition: "{{ lookup('template', item) }}"
+      loop:
+        - 'roles/ingress/templates/http_test.yaml.j2'
+        - 'roles/ingress/templates/alb_internal_ingress.yaml.j2'
+        - 'roles/ingress/templates/alb_external_ingress.yaml.j2'
+
+    - name: 'Delete ALB Controller resources'
+      block:
+        - name: Delete IngressClass
+          kubernetes.core.k8s:
+            state: absent
+            definition: "{{ lookup('template', 'roles/alb-controller/templates/ingress-class.yaml.j2') }}"
+
+        - name: Uninstall AWS Load Balancer Controller Helm chart
+          kubernetes.core.helm:
+            name: aws-load-balancer-controller
+            state: absent
+            release_namespace: kube-system
+
+        - name: Uninstall Cert-Manager Helm chart
+          kubernetes.core.helm:
+            name: cert-manager
+            state: absent
+            release_namespace: cert-manager
+
+        - name: Remove the EKS Helm chart repository
+          kubernetes.core.helm_repository:
+            name: aws
+            state: absent
+
+        - name: Remove the Jetstack Helm repository
+          kubernetes.core.helm_repository:
+            name: jetstack
+            state: absent

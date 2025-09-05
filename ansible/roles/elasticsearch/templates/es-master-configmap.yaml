@@ -9,8 +9,9 @@ data:
     network.host: 0.0.0.0
     http.port: 9200
     transport.port: 9300
-    discovery.seed_hosts: ["elasticsearch-master-cs"]
-    cluster.initial_master_nodes: ["elasticsearch-master"]
+    # discovery.seed_hosts: ["elasticsearch-master-cs"]
+    # cluster.initial_master_nodes: ["elasticsearch-master"]
+    discovery.type: single-node
     xpack.security.enabled: false
   jvm.options: |
     -Xms1g

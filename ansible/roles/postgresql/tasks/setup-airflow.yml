@@ -5,28 +5,28 @@
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Pod
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
     label_selectors:
       - app=postgresql
     wait: true
     wait_condition:
       type: Ready
-      status: "True"
+      status: 'True'
     wait_timeout: 300
 
 - name: Get PostgreSQL Pod name
   kubernetes.core.k8s_info:
     api_version: v1
     kind: Pod
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
     label_selectors:
       - app=postgresql
   register: postgres_pods
 
 - name: Wait for PostgreSQL service to be ready
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: pg_isready -U postgres
   register: postgres_ready
   until: postgres_ready.rc == 0
@@ -35,61 +35,61 @@
 
 - name: Check if Airflow user exists
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -t -c "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'airflow';"
   register: airflow_user_check
   changed_when: false
 
 - name: Create Airflow user if not exists
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -c "CREATE ROLE airflow LOGIN PASSWORD '{{ vault_airflow_password }}';"
-  when: airflow_user_check.stdout.strip() == ""
+  when: "'1' not in airflow_user_check.stdout"
   register: airflow_user_result
 
 - name: Update Airflow user password if user already exists
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
-    command: "psql -U postgres -c \"ALTER ROLE airflow WITH PASSWORD '{{ vault_airflow_password }}';\""
-  when: airflow_user_check.stdout.strip() != ""
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
+    command: 'psql -U postgres -c "ALTER ROLE airflow WITH PASSWORD ''{{ vault_airflow_password }}'';"'
+  when: "'1' in airflow_user_check.stdout"
   changed_when: false
 
 - name: Check if Airflow database exists
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -t -c "SELECT 1 FROM pg_database WHERE datname = 'airflow';"
   register: airflow_db_check
   changed_when: false
 
 - name: Create Airflow database if not exists
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -c "CREATE DATABASE airflow OWNER airflow;"
-  when: airflow_db_check.stdout.strip() == ""
+  when: "'1' not in airflow_db_check.stdout"
   register: airflow_db_result
 
 - name: Grant privileges to Airflow user
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE airflow TO airflow;"
-  changed_when: false  # 권한 부여는 항상 실행하되 changed로 표시하지 않음
+  changed_when: false # 권한 부여는 항상 실행하되 changed로 표시하지 않음
 
 - name: Verify Airflow database setup
   kubernetes.core.k8s_exec:
-    namespace: dev-system
-    pod: "{{ postgres_pods.resources[0].metadata.name }}"
+    namespace: '{{ dev_namespace }}'
+    pod: '{{ postgres_pods.resources[0].metadata.name }}'
     command: psql -U postgres -c "SELECT datname FROM pg_database WHERE datname='airflow';"
   register: verify_db
 
 - name: Display setup results
   debug:
-    msg: 
+    msg:
       - "Airflow user creation: {{ 'Success' if airflow_user_result is defined and airflow_user_result.changed else 'Already exists' }}"
       - "Airflow database creation: {{ 'Success' if airflow_db_result is defined and airflow_db_result.changed else 'Already exists' }}"
       - "Database verification: {{ 'OK' if 'airflow' in verify_db.stdout else 'Failed' }}"

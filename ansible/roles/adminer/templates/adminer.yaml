@@ -3,20 +3,18 @@ apiVersion: v1
 kind: Secret
 metadata:
   name: adminer-postgres-secret
-  namespace: dev-system
 type: Opaque
 data:
-  postgres-host: cG9zdGdyZXM= # postgres (base64 encoded)
-  postgres-port: NTQzMg== # 5432 (base64 encoded)
-  postgres-user: cG9zdGdyZXM= # postgres (base64 encoded)
-  postgres-password: ZXhhbXBsZQ== # example (base64 encoded)
-  postgres-db: cG9zdGdyZXM= # postgres (base64 encoded)
+  postgres-host: 'cG9zdGdyZXM='
+  postgres-port: 'NTQzMg=='
+  postgres-user: 'cG9zdGdyZXM='
+  postgres-password: 'cGFzczEyMzQ='
+  postgres-db: 'eW91dHViZV9kYg=='
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: adminer
-  namespace: dev-system
   labels:
     app: adminer
     component: database-admin
@@ -75,7 +73,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: adminer
-  namespace: dev-system
   labels:
     app: adminer
     component: database-admin

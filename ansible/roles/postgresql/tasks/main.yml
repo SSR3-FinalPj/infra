@@ -5,7 +5,7 @@
   kubernetes.core.k8s:
     state: present
     definition: "{{ lookup('template', 'postgresql.yaml') | from_yaml_all }}"
-    namespace: dev-system
+    namespace: '{{ dev_namespace }}'
 
 - name: Setup Airflow database and user
   include_tasks: setup-airflow.yml

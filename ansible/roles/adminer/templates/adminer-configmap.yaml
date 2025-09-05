@@ -3,25 +3,24 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: adminer-connection-info
-  namespace: dev-system
   labels:
     app: adminer
     component: connection-guide
 data:
   README.md: |
     # Adminer PostgreSQL Connection Guide
-    
+
     ## Connection Details
     - **System**: PostgreSQL
     - **Server**: `postgres`
     - **Username**: `postgres` 
     - **Password**: `example`
-    - **Database**: `postgres` (default) or `airflow`
-    
+    - **Database**: `youtube_db` (default) or `airflow`
+
     ## Available Databases
-    - `postgres` - Default PostgreSQL database
+    - `youtube_db` - Default PostgreSQL database
     - `airflow` - Airflow application database (if configured)
-    
+
     ## Access Information
     - Service Name: `adminer.dev-system.svc.cluster.local:80`
     - Internal URL: `http://adminer:80`
