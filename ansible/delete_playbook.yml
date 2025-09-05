@@ -13,9 +13,10 @@
         state: absent
         definition: "{{ lookup('template', item) }}"
       loop:
-        - 'roles/ingress/templates/http_test.yaml.j2'
+        # - 'roles/ingress/templates/http_test.yaml.j2'
         - 'roles/ingress/templates/alb_internal_ingress.yaml.j2'
         - 'roles/ingress/templates/alb_external_ingress.yaml.j2'
+        - 'roles/ingress/templates/alb_backend_ingress.yaml.j2'
 
     # 14. Delete Portainer resources
     - name: 'Delete Portainer resources'
@@ -93,11 +94,11 @@
         src: '{{ item }}'
         namespace: '{{ dev_namespace }}'
       loop:
-        - 'roles/redis/templates/redis-sentinel-service.yaml'
-        - 'roles/redis/templates/redis-sentinel-controller.yaml'
+        # - 'roles/redis/templates/redis-sentinel-service.yaml'
+        # - 'roles/redis/templates/redis-sentinel-controller.yaml'
         - 'roles/redis/templates/redis-master.yaml'
         - 'roles/redis/templates/redis-master-cs.yaml'
-        - 'roles/redis/templates/redis-controller.yaml'
+        # - 'roles/redis/templates/redis-controller.yaml'
         - 'roles/redis/templates/redis-pvc.yaml'
 
     # 7. Delete Adminer resources
@@ -250,71 +251,71 @@
       ignore_errors: yes
       tags: pvc-cleanup
 
-    # Force delete PVCs using kubectl
-    - name: 'Force delete PVCs using kubectl'
-      shell: |
-        kubectl delete pvc {{ item.metadata.name }} -n {{ dev_namespace }} --force --grace-period=0
-      loop: '{{ existing_pvcs.resources }}'
-      when: existing_pvcs.resources | length > 0
-      ignore_errors: yes
-      tags: pvc-cleanup
+    # # Force delete PVCs using kubectl
+    # - name: 'Force delete PVCs using kubectl'
+    #   shell: |
+    #     kubectl delete pvc {{ item.metadata.name }} -n {{ dev_namespace }} --force --grace-period=0
+    #   loop: '{{ existing_pvcs.resources }}'
+    #   when: existing_pvcs.resources | length > 0
+    #   ignore_errors: yes
+    #   tags: pvc-cleanup
 
-    # Wait for PVCs to be deleted (reduced timeout)
-    - name: 'Wait for PVCs to be deleted'
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: PersistentVolumeClaim
-        namespace: '{{ dev_namespace }}'
-      register: remaining_pvcs
-      until: remaining_pvcs.resources | length == 0
-      retries: 10
-      delay: 3
-      ignore_errors: yes
-      tags: pvc-cleanup
+    # # Wait for PVCs to be deleted (reduced timeout)
+    # - name: 'Wait for PVCs to be deleted'
+    #   kubernetes.core.k8s_info:
+    #     api_version: v1
+    #     kind: PersistentVolumeClaim
+    #     namespace: '{{ dev_namespace }}'
+    #   register: remaining_pvcs
+    #   until: remaining_pvcs.resources | length == 0
+    #   retries: 10
+    #   delay: 3
+    #   ignore_errors: yes
+    #   tags: pvc-cleanup
 
-    # Delete both namespaces created by the project
-    - name: 'Delete dev-system namespace'
-      kubernetes.core.k8s:
-        state: absent
-        api_version: v1
-        kind: Namespace
-        name: '{{ dev_namespace }}'
-      ignore_errors: yes
+    # # Delete both namespaces created by the project
+    # - name: 'Delete dev-system namespace'
+    #   kubernetes.core.k8s:
+    #     state: absent
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: '{{ dev_namespace }}'
+    #   ignore_errors: yes
 
-    - name: 'Force remove dev-system namespace finalizers if stuck in terminating'
-      shell: |
-        kubectl patch namespace {{ dev_namespace }} -p '{"metadata":{"finalizers":null}}' --type=merge
-      ignore_errors: yes
+    # - name: 'Force remove dev-system namespace finalizers if stuck in terminating'
+    #   shell: |
+    #     kubectl patch namespace {{ dev_namespace }} -p '{"metadata":{"finalizers":null}}' --type=merge
+    #   ignore_errors: yes
 
-    - name: 'Delete prod-system namespace (created by ingress role)'
-      kubernetes.core.k8s:
-        state: absent
-        api_version: v1
-        kind: Namespace
-        name: 'prod-system'
-      ignore_errors: yes
+    # - name: 'Delete prod-system namespace (created by ingress role)'
+    #   kubernetes.core.k8s:
+    #     state: absent
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: 'prod-system'
+    #   ignore_errors: yes
 
-    - name: 'Force remove prod-system namespace finalizers if stuck in terminating'
-      shell: |
-        kubectl patch namespace prod-system -p '{"metadata":{"finalizers":null}}' --type=merge
-      ignore_errors: yes
+    # - name: 'Force remove prod-system namespace finalizers if stuck in terminating'
+    #   shell: |
+    #     kubectl patch namespace prod-system -p '{"metadata":{"finalizers":null}}' --type=merge
+    #   ignore_errors: yes
 
-    # Final verification for both namespaces
-    - name: 'Verify dev-system namespace deletion'
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Namespace
-        name: '{{ dev_namespace }}'
-      register: dev_namespace_check
-      ignore_errors: yes
+    # # Final verification for both namespaces
+    # - name: 'Verify dev-system namespace deletion'
+    #   kubernetes.core.k8s_info:
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: '{{ dev_namespace }}'
+    #   register: dev_namespace_check
+    #   ignore_errors: yes
 
-    - name: 'Verify prod-system namespace deletion'
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: Namespace
-        name: 'prod-system'
-      register: prod_namespace_check
-      ignore_errors: yes
+    # - name: 'Verify prod-system namespace deletion'
+    #   kubernetes.core.k8s_info:
+    #     api_version: v1
+    #     kind: Namespace
+    #     name: 'prod-system'
+    #   register: prod_namespace_check
+    #   ignore_errors: yes
 
     - name: 'Cleanup completed'
       debug:
