@@ -6,11 +6,13 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    # HTTP-only 설정 (임시)
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
 spec:
   ingressClassName: alb
   rules:
-    - http:
+    - host: api.meaire.kro.kr  # 호스트 기반 라우팅 추가 (보안 강화)
+      http:
         paths:
           - path: /api/google/callback
             pathType: Exact

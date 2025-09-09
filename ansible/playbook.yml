@@ -2,33 +2,33 @@
 - hosts: localhost
   gather_facts: no
   roles:
-    - role: csi-drivers
-      tags: csi-drivers
+    # - role: csi-drivers
+    #   tags: csi-drivers
     - role: alb-controller
       tags: alb-controller
-    - role: storage
-      tags: storage
-    - role: zookeeper
-      tags: zookeeper
-    - role: kafka
-      tags: kafka
-    - role: postgresql
-      tags: postgresql
-    - role: adminer
-      tags: adminer
-    - role: redis
-      tags: redis
-    - role: elasticsearch
-      tags: elasticsearch
-    - role: kibana
-      tags: kibana
-    - role: elastic-hq
-      tags: elastic-hq
-    - role: prometheus
-      tags: prometheus
-    - role: zipkin
-      tags: zipkin
-    - role: portainer
-      tags: portainer
+    # - role: storage
+    #   tags: storage
+    # - role: zookeeper
+    #   tags: zookeeper
+    # - role: kafka
+    #   tags: kafka
+    # - role: postgresql
+    #   tags: postgresql
+    # - role: adminer
+    #   tags: adminer
+    # - role: redis
+    #   tags: redis
+    # - role: elasticsearch
+    #   tags: elasticsearch
+    # - role: kibana
+    #   tags: kibana
+    # - role: elastic-hq
+    #   tags: elastic-hq
+    # - role: prometheus
+    #   tags: prometheus
+    # - role: zipkin
+    #   tags: zipkin
+    # - role: portainer
+    #   tags: portainer
     - role: ingress
       tags: ingress

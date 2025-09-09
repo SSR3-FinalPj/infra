@@ -7,6 +7,9 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/subnets: {{ public_subnet_ids.value | join(',') }} # External ALB를 배치할 Public Subnet ID
+    # HTTP-only 설정 (임시)
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=60,routing.http2.enabled=true
 spec:
   ingressClassName: alb
   rules:
