@@ -6,12 +6,14 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    # HTTP-only 설정 (임시)
-    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
+    # HTTPS 설정 (ACM 인증서 사용)
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: {{ acm_certificate_arn.value }}
 spec:
   ingressClassName: alb
   rules:
-    - host: api.meaire.kro.kr  # 호스트 기반 라우팅 추가 (보안 강화)
+    - host: api.meaire.store  # 호스트 기반 라우팅 추가 (보안 강화)
       http:
         paths:
           - path: /api/google/callback

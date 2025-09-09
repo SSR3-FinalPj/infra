@@ -1,0 +1,29 @@
+{
+  "Comment": "Create A records for ALB endpoints",
+  "Changes": [
+    {
+      "Action": "CREATE",
+      "ResourceRecordSet": {
+        "Name": "front.meaire.store",
+        "Type": "A",
+        "AliasTarget": {
+          "DNSName": "k8s-devsyste-external-8f94827a53-1993689774.us-east-2.elb.amazonaws.com",
+          "EvaluateTargetHealth": true,
+          "HostedZoneId": "Z3AADJGX6KTTL2"
+        }
+      }
+    },
+    {
+      "Action": "CREATE",
+      "ResourceRecordSet": {
+        "Name": "api.meaire.store",
+        "Type": "A",
+        "AliasTarget": {
+          "DNSName": "k8s-devsyste-backendi-9309bfad67-1152374985.us-east-2.elb.amazonaws.com",
+          "EvaluateTargetHealth": true,
+          "HostedZoneId": "Z3AADJGX6KTTL2"
+        }
+      }
+    }
+  ]
+}
