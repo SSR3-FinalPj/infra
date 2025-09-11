@@ -7,10 +7,15 @@ metadata:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
     alb.ingress.kubernetes.io/subnets: {{ public_subnet_ids.value | join(',') }} # External ALB를 배치할 Public Subnet ID
+    # HTTPS 설정 (ACM 인증서 사용)
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}, {"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+    alb.ingress.kubernetes.io/certificate-arn: {{ acm_certificate_arn.value }}
+    alb.ingress.kubernetes.io/load-balancer-attributes: idle_timeout.timeout_seconds=60,routing.http2.enabled=true
 spec:
   ingressClassName: alb
   rules:
-    - host: front.meaire.kro.kr
+    - host: front.meaire.store
       http:
         paths:
           - path: /

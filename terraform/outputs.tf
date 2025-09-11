@@ -61,3 +61,33 @@ output "aws_region" {
   description = "The AWS region where the infrastructure is deployed."
   value       = var.aws_region
 }
+
+output "domain_name" {
+  description = "The domain name for SSL certificates."
+  value       = var.domain_name
+}
+
+# ============================================
+# ACM (Amazon Certificate Manager) Outputs
+# ============================================
+
+output "acm_certificate_arn" {
+  description = "The ARN of the ACM certificate"
+  value       = aws_acm_certificate_validation.main.certificate_arn
+}
+
+output "route53_zone_id" {
+  description = "The Route 53 hosted zone ID"
+  value       = aws_route53_zone.main.zone_id
+}
+
+output "route53_zone_name_servers" {
+  description = "The Route 53 name servers for the hosted zone"
+  value       = aws_route53_zone.main.name_servers
+}
+
+output "route53_zone_name" {
+  description = "The Route 53 hosted zone name"
+  value       = aws_route53_zone.main.name
+}
+
