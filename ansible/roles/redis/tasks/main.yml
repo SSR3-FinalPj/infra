@@ -1,20 +1,20 @@
 ---
 # roles/redis/tasks/main.yml
 
-- name: Deploy Redis PVC
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Redis PVC"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/redis-pvc.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Redis Service
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Redis Service"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/redis-master-cs.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Redis Master
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Redis Master"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/redis-master.yaml'
     namespace: '{{ dev_namespace }}'

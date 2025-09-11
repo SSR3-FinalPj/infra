@@ -5,8 +5,9 @@
   kubernetes.core.helm_repository:
     name: jetstack
     repo_url: 'https://charts.jetstack.io'
+  when: (state | default('present')) == 'present'
 
-- name: Install Cert-Manager Helm chart
+- name: "{{ 'Install' if (state | default('present')) == 'present' else 'Uninstall' }} Cert-Manager Helm chart"
   kubernetes.core.helm:
     name: cert-manager
     chart_ref: jetstack/cert-manager
@@ -15,11 +16,16 @@
     chart_version: 'v1.18.2'
     values:
       installCRDs: true
+    state: "{{ state | default('present') }}"
+    wait: true
+    wait_timeout: 300s
+  ignore_errors: "{{ (state | default('present')) == 'absent' }}"
 
 - name: Add the EKS Helm chart repository
   kubernetes.core.helm_repository:
     name: aws
     repo_url: 'https://aws.github.io/eks-charts'
+  when: (state | default('present')) == 'present'
 
 - name: Delete existing IngressClass if it exists
   kubernetes.core.k8s:
@@ -27,17 +33,22 @@
     kind: IngressClass
     name: alb
   ignore_errors: true
+  when: (state | default('present')) == 'present'
 
-- name: Deploy AWS Load Balancer Controller Helm chart
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} AWS Load Balancer Controller Helm chart"
   kubernetes.core.helm:
     name: aws-load-balancer-controller
     chart_ref: aws/aws-load-balancer-controller
     release_namespace: kube-system
     values: "{{ lookup('template', 'alb-controller-values.yaml.j2') | from_yaml }}"
+    state: "{{ state | default('present') }}"
+    wait: true
+    wait_timeout: 300s
+  ignore_errors: "{{ (state | default('present')) == 'absent' }}"
 
-- name: Apply IngressClass
+- name: "{{ 'Apply' if (state | default('present')) == 'present' else 'Remove' }} IngressClass"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     template: ingress-class.yaml.j2
 
 - name: Wait for ALB Controller deployment to be available
@@ -50,6 +61,7 @@
   until: 'alb_deployment_status.resources is defined and alb_deployment_status.resources | length > 0 and alb_deployment_status.resources[0].status.availableReplicas is defined and alb_deployment_status.resources[0].status.availableReplicas > 0'
   retries: 30
   delay: 10
+  when: (state | default('present')) == 'present'
 
 - name: Wait for cert-manager to be ready
   kubernetes.core.k8s_info:
@@ -61,13 +73,14 @@
   until: 'cert_manager_status.resources is defined and cert_manager_status.resources | length > 0 and cert_manager_status.resources[0].status.availableReplicas is defined and cert_manager_status.resources[0].status.availableReplicas > 0'
   retries: 30
   delay: 10
+  when: (state | default('present')) == 'present'
 
-- name: Create Let's Encrypt Staging ClusterIssuer
+- name: "{{ 'Create' if (state | default('present')) == 'present' else 'Remove' }} Let's Encrypt Staging ClusterIssuer"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'letsencrypt-staging-issuer.yaml.j2') }}"
 
-- name: Create Let's Encrypt Production ClusterIssuer
+- name: "{{ 'Create' if (state | default('present')) == 'present' else 'Remove' }} Let's Encrypt Production ClusterIssuer"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'letsencrypt-prod-issuer.yaml.j2') }}"

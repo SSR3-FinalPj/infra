@@ -1,8 +1,8 @@
 ---
 # roles/zipkin/tasks/main.yml
 
-- name: Deploy Zipkin Deployment
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Zipkin Deployment"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/zipkin.yaml'
     namespace: '{{ dev_namespace }}'

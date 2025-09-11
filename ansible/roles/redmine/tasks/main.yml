@@ -1,8 +1,8 @@
 ---
 # roles/redmine/tasks/main.yml
 
-- name: Deploy Redmine Application
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Redmine Application"
   kubernetes.core.k8s:
-    state: present
-    src: 'templates/redmine.yaml'
+    state: "{{ state | default('present') }}"
+    definition: "{{ lookup('template', 'redmine.yaml.j2') }}"
     namespace: '{{ dev_namespace }}'

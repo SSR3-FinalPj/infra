@@ -1,8 +1,8 @@
 ---
 # roles/portainer/tasks/main.yml
 
-- name: Deploy Portainer
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }}  Portainer"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/portainer.yaml'
     namespace: '{{ dev_namespace }}'

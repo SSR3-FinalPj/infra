@@ -1,16 +1,16 @@
 ---
 # roles/ingress/tasks/main.yml
 
-- name: Ensure prod-system namespace exists
+- name: "{{ 'Ensure' if (state | default('present')) == 'present' else 'Remove' }} prod-system namespace exists"
   kubernetes.core.k8s:
     name: prod-system
     api_version: v1
     kind: Namespace
-    state: present
+    state: "{{ state | default('present') }}"
 
-- name: Create ALB IngressClass
+- name: "{{ 'Create' if (state | default('present')) == 'present' else 'Remove' }} ALB IngressClass"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition:
       apiVersion: networking.k8s.io/v1
       kind: IngressClass
@@ -19,22 +19,22 @@
       spec:
         controller: ingress.k8s.aws/alb
 
-# - name: Deploy test application for ALB Ingress
+# - name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} test application for ALB Ingress
 #   kubernetes.core.k8s:
-#     state: present
+#     state: "{{ state | default('present') }}"
 #     definition: "{{ lookup('template', 'http_test.yaml.j2') }}"
 
-- name: Deploy External Ingress
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} External Ingress"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'alb_external_ingress.yaml.j2') }}"
 
-- name: Deploy Internal Ingress
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Internal Ingress"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'alb_internal_ingress.yaml.j2') }}"
 
-- name: Deploy Backend Ingress
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Backend Ingress"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'alb_backend_ingress.yaml.j2') }}"

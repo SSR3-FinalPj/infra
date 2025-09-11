@@ -12,27 +12,28 @@
     - 'templates/zk-pdb.yaml'
     - 'templates/zk-configmap.yaml'
   ignore_errors: true
+  when: (state | default('present')) == 'present'
 
-- name: Deploy Zookeeper ConfigMap
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Zookeeper ConfigMap"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/zk-configmap.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Zookeeper PodDisruptionBudget
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Zookeeper PodDisruptionBudget"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/zk-pdb.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Zookeeper Service
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Zookeeper Service"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/zk-svc.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Zookeeper StatefulSet
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Zookeeper StatefulSet"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/zk.yaml'
     namespace: '{{ dev_namespace }}'

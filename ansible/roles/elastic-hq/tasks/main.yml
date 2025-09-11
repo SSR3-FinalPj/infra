@@ -1,8 +1,8 @@
 ---
 # roles/elastic-hq/tasks/main.yml
 
-- name: Deploy Elastic-HQ
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }}  Elastic-HQ"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/elastic-hq.yaml'
     namespace: '{{ dev_namespace }}'

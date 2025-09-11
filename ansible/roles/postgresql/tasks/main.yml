@@ -1,12 +1,12 @@
 ---
 # roles/postgresql/tasks/main.yml
 
-- name: Deploy PostgreSQL
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} PostgreSQL"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'postgresql.yaml') | from_yaml_all }}"
     namespace: '{{ dev_namespace }}'
 
 - name: Setup Airflow database and user
   include_tasks: setup-airflow.yml
-  when: setup_airflow_db | default(true)
+  when: setup_airflow_db | default(true) and (state | default('present')) == 'present'

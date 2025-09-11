@@ -5,8 +5,9 @@
   kubernetes.core.helm_repository:
     name: aws-ebs-csi-driver
     repo_url: 'https://kubernetes-sigs.github.io/aws-ebs-csi-driver'
+  when: (state | default('present')) == 'present'
 
-- name: Install AWS EBS CSI Driver Helm chart
+- name: "{{ 'Install' if (state | default('present')) == 'present' else 'Uninstall' }} AWS EBS CSI Driver Helm chart"
   kubernetes.core.helm:
     name: aws-ebs-csi-driver
     chart_ref: aws-ebs-csi-driver/aws-ebs-csi-driver
@@ -18,13 +19,18 @@
           name: ebs-csi-controller-sa
           annotations:
             'eks.amazonaws.com/role-arn': '{{ ebs_csi_driver_role_arn.value }}'
+    state: "{{ state | default('present') }}"
+    wait: true
+    wait_timeout: 300s
+  ignore_errors: "{{ (state | default('present')) == 'absent' }}"
 
 - name: Add the aws-efs-csi-driver Helm repository
   kubernetes.core.helm_repository:
     name: aws-efs-csi-driver
     repo_url: 'https://kubernetes-sigs.github.io/aws-efs-csi-driver'
+  when: (state | default('present')) == 'present'
 
-- name: Install AWS EFS CSI Driver Helm chart
+- name: "{{ 'Install' if (state | default('present')) == 'present' else 'Uninstall' }} AWS EFS CSI Driver Helm chart"
   kubernetes.core.helm:
     name: aws-efs-csi-driver
     chart_ref: aws-efs-csi-driver/aws-efs-csi-driver
@@ -36,3 +42,7 @@
           name: efs-csi-controller-sa
           annotations:
             'eks.amazonaws.com/role-arn': '{{ efs_csi_driver_role_arn.value }}'
+    state: "{{ state | default('present') }}"
+    wait: true
+    wait_timeout: 300s
+  ignore_errors: "{{ (state | default('present')) == 'absent' }}"

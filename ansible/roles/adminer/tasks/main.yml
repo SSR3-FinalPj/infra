@@ -1,14 +1,14 @@
 ---
 # roles/adminer/tasks/main.yml
 
-- name: Deploy Adminer ConfigMap
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Adminer ConfigMap"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/adminer-configmap.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Adminer Deployment
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Adminer Deployment"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/adminer.yaml'
     namespace: '{{ dev_namespace }}'

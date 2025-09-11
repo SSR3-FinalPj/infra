@@ -1,19 +1,19 @@
 ---
 # roles/storage/tasks/main.yml
 
-- name: Ensure '{{ dev_namespace }}' namespace exists
+- name: "{{ 'Ensure' if (state | default('present')) == 'present' else 'Remove' }} '{{ dev_namespace }}' namespace exists"
   kubernetes.core.k8s:
     name: '{{ dev_namespace }}'
     api_version: v1
     kind: Namespace
-    state: present
+    state: "{{ state | default('present') }}"
 
-- name: Deploy EFS StorageClass
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} EFS StorageClass"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'storageClass.yaml') }}"
 
-- name: Create resources from templated PV definitions
+- name: "{{ 'Create' if (state | default('present')) == 'present' else 'Remove' }} resources from templated PV definitions"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('template', 'createpv.yaml.j2') | from_yaml_all }}"
