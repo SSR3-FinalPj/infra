@@ -48,7 +48,7 @@
     state: absent
   when: "'monitoring' not in helm_list_result.stdout"
 
-- name: Deploy Prometheus Stack using Helm
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Prometheus Stack using Helm"
   kubernetes.core.helm:
     name: monitoring
     chart_ref: prometheus-community/kube-prometheus-stack
@@ -59,13 +59,25 @@
     wait: true
     wait_timeout: 600s
     atomic: true
-    state: present
+    state: "{{ state | default('present') }}"
+  when: (state | default('present')) == 'present'
 
-- name: Deploy custom ServiceMonitors for existing services
+- name: Remove Prometheus Stack using Helm
+  kubernetes.core.helm:
+    name: monitoring
+    release_namespace: '{{ dev_namespace }}'
+    state: absent
+    wait: true
+    wait_timeout: 300s
+  when: (state | default('present')) == 'absent'
+  ignore_errors: true
+
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} custom ServiceMonitors for existing services"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/servicemonitors.yaml'
     namespace: '{{ dev_namespace }}'
+  when: (state | default('present')) == 'present'
 
 - name: Create ConfigMap for custom EKS dashboard
   shell: |

@@ -1,14 +1,14 @@
 ---
 # roles/kibana/tasks/main.yml
 
-- name: Deploy Kibana ConfigMap
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }}  Kibana ConfigMap"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/kibana-configmap.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Kibana Deployment
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }}  Kibana Deployment"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/kibana.yaml'
     namespace: '{{ dev_namespace }}'

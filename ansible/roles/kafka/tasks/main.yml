@@ -12,27 +12,28 @@
     - 'templates/kafka-cs.yaml'
     - 'templates/kafka-pdb.yaml'
   ignore_errors: true
+  when: (state | default('present')) == 'present'
 
-- name: Deploy Kafka PodDisruptionBudget
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Kafka PodDisruptionBudget"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/kafka-pdb.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Kafka Client Service
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Kafka Client Service"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/kafka-cs.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Kafka StatefulSet
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Kafka StatefulSet"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/kafka.yaml'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Kafka UI
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Kafka UI"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     src: 'templates/kafka-ui.yaml'
     namespace: '{{ dev_namespace }}'

@@ -28,6 +28,9 @@ spec:
           securityContext:
             privileged: true
           image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
+          env:
+            - name: JAVA_OPTS
+              value: '-Duser.timezone=Asia/Seoul'
           #        resources:
           #          limits:
           #            memory: "20Gi"

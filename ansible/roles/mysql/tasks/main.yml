@@ -1,8 +1,8 @@
 ---
 # roles/mysql/tasks/main.yml
 
-- name: Deploy MySQL for Redmine
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} MySQL for Redmine"
   kubernetes.core.k8s:
-    state: present
-    src: 'templates/mysql.yaml'
+    state: "{{ state | default('present') }}"
+    definition: "{{ lookup('template', 'mysql.yaml.j2') }}"
     namespace: '{{ dev_namespace }}'

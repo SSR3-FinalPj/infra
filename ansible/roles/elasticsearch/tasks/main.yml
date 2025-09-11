@@ -1,9 +1,9 @@
 ---
 # roles/elasticsearch/tasks/main.yml
 
-- name: Deploy Elasticsearch ConfigMaps
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Elasticsearch ConfigMaps"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('file', item) }}"
     namespace: '{{ dev_namespace }}'
   loop:
@@ -11,9 +11,9 @@
     # - 'templates/es-data1-configmap.yaml'
     # - 'templates/es-data2-configmap.yaml'
 
-- name: Deploy Elasticsearch Client Services
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Elasticsearch Client Services"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('file', item) }}"
     namespace: '{{ dev_namespace }}'
   loop:
@@ -21,9 +21,9 @@
     # - 'templates/es-data1-cs.yaml'
     # - 'templates/es-data2-cs.yaml'
 
-- name: Deploy Elasticsearch StatefulSets
+- name: "{{ 'Deploy' if (state | default('present')) == 'present' else 'Remove' }} Elasticsearch StatefulSets"
   kubernetes.core.k8s:
-    state: present
+    state: "{{ state | default('present') }}"
     definition: "{{ lookup('file', item) }}"
     namespace: '{{ dev_namespace }}'
   loop:
