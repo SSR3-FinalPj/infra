@@ -26,6 +26,22 @@ variable "k8s_version" {
 Terraform에서는 버전, 경로, 리전 이름, 클러스터 이름 등은 보통 string 타입으로 취급
 */
 
+# 도메인 이름 (SSL 인증서용)
+variable "domain_name" {
+  description = "Domain name for SSL certificate"
+  type        = string
+}
+
+# ============================================
+# 참고: ALB DNS 변수들은 제거했습니다
+# ============================================
+# ALB는 Ansible에서 생성되므로 Terraform에서 
+# ALB DNS 정보를 참조할 수 없습니다.
+# ALB DNS 레코드는 수동 또는 별도 방법으로 생성하세요.
+# ============================================
+
+
+
 # EKS 워커 노드의 EC2 인스턴스 타입
 variable "node_instance_type" {
   description = "EC2 instance type for EKS worker nodes"

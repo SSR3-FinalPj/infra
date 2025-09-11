@@ -1,9 +1,0 @@
----
-- hosts: localhost
-  gather_facts: no
-  tasks:
-    - name: 'Delete PostgreSQL resources'
-      kubernetes.core.k8s:
-        state: absent
-        src: 'roles/postgresql/templates/postgresql.yaml'
-        namespace: '{{ dev_namespace }}'
