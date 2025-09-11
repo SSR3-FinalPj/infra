@@ -39,7 +39,7 @@
 1.  **Terraform 작업 디렉토리로 이동합니다.**
 
     ```bash
-    cd refactored/terraform
+    cd terraform
     ```
 
 2.  **Terraform을 초기화합니다.**
@@ -72,21 +72,21 @@
     Ansible에서 변수로 사용하기 위해, `terraform` 디렉토리에서 다음 명령을 실행하여 출력 값을 JSON 파일로 저장합니다.
 
     ```bash
-    # (현재 위치: refactored/terraform)
+    # (현재 위치: terraform)
     terraform output -json > ../ansible/terraform_outputs.json
     ```
 
 2.  **Ansible 작업 디렉토리로 이동합니다.**
 
     ```bash
-    # (현재 위치: refactored/terraform)
+    # (현재 위치: terraform)
     cd ../ansible
     ```
 
 3.  **Ansible 플레이북을 실행하여 애플리케이션을 배포합니다.**
     `--extra-vars` 옵션을 사용하여 방금 생성한 JSON 파일의 내용을 변수로 전달합니다.
     ```bash
-    # (현재 위치: refactored/ansible)
+    # (현재 위치: ansible)
     ansible-playbook playbook.yml --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
     ```
     플레이북이 실행되면서 `csi-drivers` Role부터 `ingress` Role까지 정의된 순서대로 모든 애플리케이션이 클러스터에 배포됩니다.
@@ -96,11 +96,14 @@
 특정 태그를 사용하여 개별 애플리케이션만 배포할 수 있습니다:
 
 ```bash
-# Prometheus 모니터링 스택만 배포
-ansible-playbook playbook.yml --tags "prometheus" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+# Elasticsearch와 Kibana만 배포
+ansible-playbook playbook.yml --tags "elasticsearch,kibana" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
 
 # Kafka와 Zookeeper만 배포
 ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
+# Zipkin 트레이싱만 배포
+ansible-playbook playbook.yml --tags "zipkin" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
 ```
 
 ## 4. 리소스 삭제 절차
@@ -117,7 +120,7 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
     `terraform` 디렉토리에서 `destroy` 명령을 실행하면 VPC부터 EKS 클러스터까지 모든 AWS 리소스가 삭제됩니다. 엔드포인트 대상 네트워크 연결도 해제해 줄 것.
     ec2 -> 볼륨도 제거, VPC 안 지워지면 손으로 삭제
     ```bash
-    cd refactored/terraform
+    cd terraform
     terraform destroy
     ```
     `yes`를 입력하여 삭제를 진행합니다.
@@ -132,57 +135,41 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
 2. **ALB Controller**: AWS Application Load Balancer 관리
 3. **Storage**: StorageClass 및 PersistentVolume 설정
 
-### 🌐 **네트워킹 레이어**
-
-4. **Ingress**: ALB 기반 외부/내부 로드밸런서 설정
-
 ### 💾 **데이터 레이어**
 
-5. **Zookeeper**: 분산 시스템 코디네이션
-6. **Kafka**: 실시간 스트리밍 플랫폼 (+Kafka UI)
-7. **PostgreSQL**: 관계형 데이터베이스 (Airflow용)
+4. **Zookeeper**: 분산 시스템 코디네이션
+5. **Kafka**: 실시간 스트리밍 플랫폼
+6. **PostgreSQL**: 관계형 데이터베이스
+7. **Redis**: 인메모리 캐시
 
-### ⚙️ **처리 레이어**
+### ⚙️ **관리 도구**
 
-8. **Airflow**: 워크플로우 오케스트레이션 (커스텀 DAG 포함)
-9. **Adminer**: 데이터베이스 관리 도구
+8. **Adminer**: 데이터베이스 관리 도구
 
-### 🚀 **캐싱 레이어**
+### 📊 **검색 및 분석**
 
-10. **Redis**: 인메모리 캐시 (Sentinel 구성)
+9. **Elasticsearch**: 검색 및 분석 엔진
+10. **Kibana**: 데이터 시각화 도구
+11. **Elastic-HQ**: Elasticsearch 클러스터 관리
 
-### 📊 **분석 레이어**
+### 📈 **모니터링 및 트레이싱**
 
-11. **Elasticsearch**: 검색 및 분석 엔진
-12. **Kibana**: 데이터 시각화 도구
-13. **Elastic-HQ**: Elasticsearch 클러스터 관리
+12. **Zipkin**: 분산 트레이싱 시스템
 
-### 📈 **모니터링 레이어** (Helm 차트)
+### 🔧 **관리 인터페이스**
 
-14. **Prometheus Stack**: Helm을 사용하여 통합 배포
-    - **Prometheus**: 메트릭 수집 및 저장
-    - **Grafana**: 대시보드 및 시각화
-    - **AlertManager**: 알림 관리
-    - 네임스페이스: `dev-system`
-    - ServiceMonitor를 통한 기존 서비스 메트릭 수집
+13. **Portainer**: Docker/Kubernetes 관리 인터페이스
 
-### 🔧 **관리 레이어**
+### 🌐 **네트워킹**
 
-15. **Portainer**: Docker/Kubernetes 관리 인터페이스
+14. **Ingress**: ALB 기반 로드밸런서 및 라우팅 설정
 
-### 🗄️ **추가 데이터베이스**
+### 📋 **사용 가능하지만 비활성화된 역할**
 
-16. **MySQL**: 범용 관계형 데이터베이스
-
-### 📋 **애플리케이션**
-
-17. **Redmine**: 프로젝트 관리 도구
-
-### 📝 **모니터링 접근 정보**
-
-- **Grafana**: ALB Internal Ingress를 통해 접근 가능
-- **Prometheus**: `http://monitoring-kube-prometheus-prometheus.dev-system:9090`
-- **AlertManager**: `http://monitoring-kube-prometheus-alertmanager.dev-system:9093`
+- **Airflow**: 워크플로우 오케스트레이션 (역할 존재, playbook에서 제외)
+- **MySQL**: 범용 관계형 데이터베이스 (역할 존재, playbook에서 제외)
+- **Redmine**: 프로젝트 관리 도구 (역할 존재, playbook에서 제외)
+- **Prometheus**: 메트릭 수집 시스템 (역할 존재, 현재 주석 처리됨)
 
 ## 6. 프로젝트 구조
 
@@ -192,4 +179,4 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
   - `roles/`: 각 애플리케이션별로 분리된 Role 디렉토리
   - `playbook.yml`: Role 실행 순서를 정의하는 메인 플레이북
   - `terraform_outputs.json`: Terraform에서 생성된 출력 값이 저장되는 파일 (Git에는 포함하지 않는 것을 권장)
-- **`temp_airflow/`**: 커스텀 Airflow 설정 및 DAG
+- **`scripts/`**: DNS 레코드 관리 및 기타 유틸리티 스크립트
