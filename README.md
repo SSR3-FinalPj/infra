@@ -87,8 +87,10 @@
     `--extra-vars` 옵션을 사용하여 방금 생성한 JSON 파일의 내용을 변수로 전달합니다.
     ```bash
     # (현재 위치: ansible)
-    ansible-playbook playbook.yml --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+    # 애플리케이션 배포
+    ansible-playbook playbook.yml -e "state=present" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
     ```
+    **참고**: `state=present`는 기본값이므로 생략 가능하지만, 명시적 표현을 위해 권장합니다.
     플레이북이 실행되면서 `csi-drivers` Role부터 `ingress` Role까지 정의된 순서대로 모든 애플리케이션이 클러스터에 배포됩니다.
 
 ### 특정 애플리케이션만 배포
@@ -97,33 +99,90 @@
 
 ```bash
 # Elasticsearch와 Kibana만 배포
-ansible-playbook playbook.yml --tags "elasticsearch,kibana" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+ansible-playbook playbook.yml -e "state=present" --tags "elasticsearch,kibana" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
 
 # Kafka와 Zookeeper만 배포
-ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+ansible-playbook playbook.yml -e "state=present" --tags "kafka,zookeeper" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
 
 # Zipkin 트레이싱만 배포
-ansible-playbook playbook.yml --tags "zipkin" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+ansible-playbook playbook.yml -e "state=present" --tags "zipkin" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
 ```
 
-## 4. 리소스 삭제 절차
+## 4. 리소스 삭제 절차 ⚡ **개선됨!**
 
-생성된 모든 리소스를 삭제하려면 배포의 역순으로 진행합니다.
+**🎉 새로운 방식**: 이제 단일 플레이북으로 생성과 삭제를 모두 처리할 수 있습니다!
 
-1.  **Ansible로 애플리케이션 삭제:**
+### **전체 리소스 삭제**
 
+1.  **Ansible로 애플리케이션 삭제 (새로운 방식):**
+    
     ```bash
-    ansible-playbook delete_playbook.yml --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+    # 모든 애플리케이션을 의존성 역순으로 자동 삭제
+    ansible-playbook playbook.yml -e "state=absent" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
     ```
+    
+    **장점:**
+    - ✅ 의존성 순서 자동 관리 (`ingress` → `portainer` → ... → `csi-drivers` 순서로 삭제)
+    - ✅ 단일 파일로 생성/삭제 모두 처리 (DRY 원칙)
+    - ✅ 기존 복잡한 `delete_playbook.yml` (337줄) 불필요
+
+### **특정 애플리케이션만 삭제**
+
+```bash
+# 특정 서비스만 삭제
+ansible-playbook playbook.yml -e "state=absent" --tags "mysql,redmine" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
+# 모니터링 스택만 삭제  
+ansible-playbook playbook.yml -e "state=absent" --tags "prometheus,zipkin" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+```
 
 2.  **Terraform으로 인프라 전체 삭제:**
-    `terraform` 디렉토리에서 `destroy` 명령을 실행하면 VPC부터 EKS 클러스터까지 모든 AWS 리소스가 삭제됩니다. 엔드포인트 대상 네트워크 연결도 해제해 줄 것.
-    ec2 -> 볼륨도 제거, VPC 안 지워지면 손으로 삭제
+    모든 애플리케이션 삭제 후 AWS 인프라를 정리합니다.
     ```bash
     cd terraform
     terraform destroy
     ```
     `yes`를 입력하여 삭제를 진행합니다.
+
+### **~~기존 방식~~ (더 이상 필요 없음)**
+~~`delete_playbook.yml`을 사용하던 기존 방식은 이제 불필요합니다.~~
+
+## 📋 **통합 워크플로우 (권장)**
+
+### **완전한 배포 사이클**
+```bash
+# 1. 인프라 생성
+cd terraform
+terraform init
+terraform apply
+terraform output -json > ../ansible/terraform_outputs.json
+
+# 2. 애플리케이션 배포
+cd ../ansible  
+ansible-playbook playbook.yml -e "state=present" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
+# 3. DNS 설정 (선택사항)
+cd ../scripts
+./setup-dns-records.sh
+```
+
+### **완전한 정리 사이클**
+```bash
+# 1. 애플리케이션 삭제 (의존성 역순 자동 처리)
+cd ansible
+ansible-playbook playbook.yml -e "state=absent" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
+# 2. 인프라 삭제
+cd ../terraform  
+terraform destroy
+```
+
+### **부분 업데이트 사이클**
+```bash
+# 특정 서비스만 재배포
+ansible-playbook playbook.yml -e "state=absent" --tags "mysql,redmine" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+ansible-playbook playbook.yml -e "state=present" --tags "mysql,redmine" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+```
 
 ## 5. 배포되는 애플리케이션 스택
 
