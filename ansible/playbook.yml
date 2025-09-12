@@ -24,6 +24,10 @@
       tags: kibana
     - role: elastic-hq
       tags: elastic-hq
+    - role: mysql
+      tags: mysql
+    - role: redmine
+      tags: redmine
     - role: prometheus
       tags: prometheus
     - role: zipkin

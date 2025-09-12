@@ -232,24 +232,24 @@
     # Final Cleanup - 최종 정리 작업
     # ==============================================
 
-    # Get all PVCs in dev-system namespace first
-    - name: 'Get all PVCs in dev-system namespace'
-      kubernetes.core.k8s_info:
-        api_version: v1
-        kind: PersistentVolumeClaim
-        namespace: '{{ dev_namespace }}'
-      register: existing_pvcs
-      ignore_errors: yes
-      tags: pvc-cleanup
+    # # Get all PVCs in dev-system namespace first
+    # - name: 'Get all PVCs in dev-system namespace'
+    #   kubernetes.core.k8s_info:
+    #     api_version: v1
+    #     kind: PersistentVolumeClaim
+    #     namespace: '{{ dev_namespace }}'
+    #   register: existing_pvcs
+    #   ignore_errors: yes
+    #   tags: pvc-cleanup
 
-    # Remove finalizers from all PVCs using kubectl patch
-    - name: 'Remove finalizers from PVCs using kubectl patch'
-      shell: |
-        kubectl patch pvc {{ item.metadata.name }} -n {{ dev_namespace }} -p '{"metadata":{"finalizers":null}}' --type=merge
-      loop: '{{ existing_pvcs.resources }}'
-      when: existing_pvcs.resources | length > 0
-      ignore_errors: yes
-      tags: pvc-cleanup
+    # # Remove finalizers from all PVCs using kubectl patch
+    # - name: 'Remove finalizers from PVCs using kubectl patch'
+    #   shell: |
+    #     kubectl patch pvc {{ item.metadata.name }} -n {{ dev_namespace }} -p '{"metadata":{"finalizers":null}}' --type=merge
+    #   loop: '{{ existing_pvcs.resources }}'
+    #   when: existing_pvcs.resources | length > 0
+    #   ignore_errors: yes
+    #   tags: pvc-cleanup
 
     # # Force delete PVCs using kubectl
     # - name: 'Force delete PVCs using kubectl'

@@ -109,3 +109,4 @@ secrets/
 credentials/
 devops/
 backend/
+.claude/

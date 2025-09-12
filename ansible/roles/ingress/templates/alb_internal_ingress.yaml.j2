@@ -37,7 +37,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: airflow-service-webserver
+                name: scheduler-service
                 port:
                   number: 80
     - host: kafka.{{ base_domain }}

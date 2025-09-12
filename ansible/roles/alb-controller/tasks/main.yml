@@ -61,13 +61,3 @@
   until: 'cert_manager_status.resources is defined and cert_manager_status.resources | length > 0 and cert_manager_status.resources[0].status.availableReplicas is defined and cert_manager_status.resources[0].status.availableReplicas > 0'
   retries: 30
   delay: 10
-
-- name: Create Let's Encrypt Staging ClusterIssuer
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'letsencrypt-staging-issuer.yaml.j2') }}"
-
-- name: Create Let's Encrypt Production ClusterIssuer
-  kubernetes.core.k8s:
-    state: present
-    definition: "{{ lookup('template', 'letsencrypt-prod-issuer.yaml.j2') }}"
