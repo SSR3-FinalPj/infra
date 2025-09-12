@@ -2,155 +2,155 @@
 - hosts: localhost
   gather_facts: no
   tasks:
-    # # ==============================================
-    # # Delete in REVERSE order of playbook.yml
-    # # playbook.yml 순서의 역순으로 삭제
-    # # ==============================================
+    # ==============================================
+    # Delete in REVERSE order of playbook.yml
+    # playbook.yml 순서의 역순으로 삭제
+    # ==============================================
 
-    # # 15. Delete Ingress resources (마지막 배포 → 첫 번째 삭제)
-    # - name: 'Delete Ingress resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     definition: "{{ lookup('template', item) }}"
-    #   loop:
-    #     # - 'roles/ingress/templates/http_test.yaml.j2'
-    #     - 'roles/ingress/templates/alb_internal_ingress.yaml.j2'
-    #     - 'roles/ingress/templates/alb_external_ingress.yaml.j2'
-    #     - 'roles/ingress/templates/alb_backend_ingress.yaml.j2'
+    # 15. Delete Ingress resources (마지막 배포 → 첫 번째 삭제)
+    - name: 'Delete Ingress resources'
+      kubernetes.core.k8s:
+        state: absent
+        definition: "{{ lookup('template', item) }}"
+      loop:
+        # - 'roles/ingress/templates/http_test.yaml.j2'
+        - 'roles/ingress/templates/alb_internal_ingress.yaml.j2'
+        - 'roles/ingress/templates/alb_external_ingress.yaml.j2'
+        - 'roles/ingress/templates/alb_backend_ingress.yaml.j2'
 
-    # # 14. Delete Portainer resources
-    # - name: 'Delete Portainer resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/portainer/templates/portainer.yaml'
+    # 14. Delete Portainer resources
+    - name: 'Delete Portainer resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/portainer/templates/portainer.yaml'
 
-    # # 13. Delete Zipkin resources (누락되었던 항목 추가)
-    # - name: 'Delete Zipkin resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/zipkin/templates/zipkin.yaml'
+    # 13. Delete Zipkin resources (누락되었던 항목 추가)
+    - name: 'Delete Zipkin resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/zipkin/templates/zipkin.yaml'
 
-    # # 12. Delete Prometheus resources (Helm 차트 포함)
-    # - name: 'Delete Prometheus resources'
-    #   block:
-    #     - name: Delete Prometheus ServiceMonitors
-    #       kubernetes.core.k8s:
-    #         state: absent
-    #         src: 'roles/prometheus/templates/servicemonitors.yaml'
-    #         namespace: '{{ dev_namespace }}'
-    #       ignore_errors: yes
+    # 12. Delete Prometheus resources (Helm 차트 포함)
+    - name: 'Delete Prometheus resources'
+      block:
+        - name: Delete Prometheus ServiceMonitors
+          kubernetes.core.k8s:
+            state: absent
+            src: 'roles/prometheus/templates/servicemonitors.yaml'
+            namespace: '{{ dev_namespace }}'
+          ignore_errors: yes
 
-    #     - name: Uninstall Prometheus Helm chart
-    #       kubernetes.core.helm:
-    #         name: monitoring
-    #         state: absent
-    #         release_namespace: '{{ dev_namespace }}'
-    #       ignore_errors: yes
+        - name: Uninstall Prometheus Helm chart
+          kubernetes.core.helm:
+            name: monitoring
+            state: absent
+            release_namespace: '{{ dev_namespace }}'
+          ignore_errors: yes
 
-    # # 11. Delete Elastic-HQ resources
-    # - name: 'Delete Elastic-HQ resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: 'roles/elastic-hq/templates/elastic-hq.yaml'
-    #     namespace: '{{ dev_namespace }}'
+    # 11. Delete Elastic-HQ resources
+    - name: 'Delete Elastic-HQ resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: 'roles/elastic-hq/templates/elastic-hq.yaml'
+        namespace: '{{ dev_namespace }}'
 
-    # # 10. Delete Kibana resources
-    # - name: 'Delete Kibana resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/kibana/templates/kibana.yaml'
-    #     - 'roles/kibana/templates/kibana-configmap.yaml'
+    # 10. Delete Kibana resources
+    - name: 'Delete Kibana resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/kibana/templates/kibana.yaml'
+        - 'roles/kibana/templates/kibana-configmap.yaml'
 
-    # # 9. Delete Elasticsearch resources
-    # - name: 'Delete Elasticsearch resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/elasticsearch/templates/es-master.yaml'
-    #     - 'roles/elasticsearch/templates/es-master-cs.yaml'
-    #     - 'roles/elasticsearch/templates/es-master-configmap.yaml'
-    #     - 'roles/elasticsearch/templates/es-data1.yaml'
-    #     - 'roles/elasticsearch/templates/es-data1-cs.yaml'
-    #     - 'roles/elasticsearch/templates/es-data1-configmap.yaml'
-    #     - 'roles/elasticsearch/templates/es-data2.yaml'
-    #     - 'roles/elasticsearch/templates/es-data2-cs.yaml'
-    #     - 'roles/elasticsearch/templates/es-data2-configmap.yaml'
+    # 9. Delete Elasticsearch resources
+    - name: 'Delete Elasticsearch resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/elasticsearch/templates/es-master.yaml'
+        - 'roles/elasticsearch/templates/es-master-cs.yaml'
+        - 'roles/elasticsearch/templates/es-master-configmap.yaml'
+        - 'roles/elasticsearch/templates/es-data1.yaml'
+        - 'roles/elasticsearch/templates/es-data1-cs.yaml'
+        - 'roles/elasticsearch/templates/es-data1-configmap.yaml'
+        - 'roles/elasticsearch/templates/es-data2.yaml'
+        - 'roles/elasticsearch/templates/es-data2-cs.yaml'
+        - 'roles/elasticsearch/templates/es-data2-configmap.yaml'
 
-    # # 8. Delete Redis resources
-    # - name: 'Delete Redis resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     # - 'roles/redis/templates/redis-sentinel-service.yaml'
-    #     # - 'roles/redis/templates/redis-sentinel-controller.yaml'
-    #     - 'roles/redis/templates/redis-master.yaml'
-    #     - 'roles/redis/templates/redis-master-cs.yaml'
-    #     # - 'roles/redis/templates/redis-controller.yaml'
-    #     - 'roles/redis/templates/redis-pvc.yaml'
+    # 8. Delete Redis resources
+    - name: 'Delete Redis resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        # - 'roles/redis/templates/redis-sentinel-service.yaml'
+        # - 'roles/redis/templates/redis-sentinel-controller.yaml'
+        - 'roles/redis/templates/redis-master.yaml'
+        - 'roles/redis/templates/redis-master-cs.yaml'
+        # - 'roles/redis/templates/redis-controller.yaml'
+        - 'roles/redis/templates/redis-pvc.yaml'
 
-    # # 7. Delete Adminer resources
-    # - name: 'Delete Adminer resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/adminer/templates/adminer.yaml'
-    #     - 'roles/adminer/templates/adminer-configmap.yaml'
+    # 7. Delete Adminer resources
+    - name: 'Delete Adminer resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/adminer/templates/adminer.yaml'
+        - 'roles/adminer/templates/adminer-configmap.yaml'
 
-    # # 6. Delete PostgreSQL resources
-    # - name: 'Delete PostgreSQL resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: 'roles/postgresql/templates/postgresql.yaml'
-    #     namespace: '{{ dev_namespace }}'
+    # 6. Delete PostgreSQL resources
+    - name: 'Delete PostgreSQL resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: 'roles/postgresql/templates/postgresql.yaml'
+        namespace: '{{ dev_namespace }}'
 
-    # # 5. Delete Kafka resources
-    # - name: 'Delete Kafka resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/kafka/templates/kafka-ui.yaml'
-    #     - 'roles/kafka/templates/kafka.yaml'
-    #     - 'roles/kafka/templates/kafka-cs.yaml'
-    #     - 'roles/kafka/templates/kafka-pdb.yaml'
+    # 5. Delete Kafka resources
+    - name: 'Delete Kafka resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/kafka/templates/kafka-ui.yaml'
+        - 'roles/kafka/templates/kafka.yaml'
+        - 'roles/kafka/templates/kafka-cs.yaml'
+        - 'roles/kafka/templates/kafka-pdb.yaml'
 
-    # # 4. Delete Zookeeper resources
-    # - name: 'Delete Zookeeper resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/zookeeper/templates/zk.yaml'
-    #     - 'roles/zookeeper/templates/zk-svc.yaml'
-    #     - 'roles/zookeeper/templates/zk-pdb.yaml'
-    #     - 'roles/zookeeper/templates/zk-configmap.yaml'
+    # 4. Delete Zookeeper resources
+    - name: 'Delete Zookeeper resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/zookeeper/templates/zk.yaml'
+        - 'roles/zookeeper/templates/zk-svc.yaml'
+        - 'roles/zookeeper/templates/zk-pdb.yaml'
+        - 'roles/zookeeper/templates/zk-configmap.yaml'
 
-    # # 3. Delete Storage resources
-    # - name: 'Delete Storage resources'
-    #   kubernetes.core.k8s:
-    #     state: absent
-    #     src: '{{ item }}'
-    #     namespace: '{{ dev_namespace }}'
-    #   loop:
-    #     - 'roles/storage/templates/storageClass.yaml'
-    #     - 'roles/storage/templates/createpv.yaml.j2'
+    # 3. Delete Storage resources
+    - name: 'Delete Storage resources'
+      kubernetes.core.k8s:
+        state: absent
+        src: '{{ item }}'
+        namespace: '{{ dev_namespace }}'
+      loop:
+        - 'roles/storage/templates/storageClass.yaml'
+        - 'roles/storage/templates/createpv.yaml.j2'
 
     # 2. Delete ALB Controller resources
     - name: 'Delete ALB Controller resources'
