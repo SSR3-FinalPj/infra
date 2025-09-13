@@ -1,0 +1,248 @@
+---
+# k6 Load Testing Jobs and CronJobs
+# 다양한 테스트 시나리오를 위한 Job 템플릿들
+
+# 기본 성능 테스트 Job
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-basic-performance-test
+  labels:
+    app: k6-load-test
+    test-type: basic-performance
+spec:
+  ttlSecondsAfterFinished: 3600 # 1시간 후 자동 정리
+  template:
+    metadata:
+      labels:
+        app: k6-load-test
+        test-type: basic-performance
+      annotations:
+        prometheus.io/scrape: 'false'
+    spec:
+      serviceAccountName: k6-runner
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command: ['k6', 'run']
+          args:
+            - '--out=experimental-prometheus-rw'
+            - '/scripts/basic-load-test.js'
+          volumeMounts:
+            - name: test-scripts
+              mountPath: /scripts
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          env:
+            - name: K6_PROMETHEUS_RW_SERVER_URL
+              value: 'http://monitoring-kube-prometheus-prometheus.dev-system.svc.cluster.local:80/api/v1/write'
+            - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+              value: 'false'
+      volumes:
+        - name: test-scripts
+          configMap:
+            name: k6-test-scripts
+
+---
+# 정기 기본 성능 테스트 CronJob (매일 오전 2시)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: k6-daily-performance-test
+  labels:
+    app: k6-load-test
+    schedule-type: daily
+spec:
+  schedule: '0 2 * * *' # 매일 오전 2시
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    metadata:
+      labels:
+        app: k6-load-test
+        test-type: scheduled-basic
+    spec:
+      ttlSecondsAfterFinished: 86400 # 24시간 후 정리
+      template:
+        spec:
+          serviceAccountName: k6-runner
+          restartPolicy: Never
+          containers:
+            - name: k6
+              image: grafana/k6:latest
+              command: ['k6', 'run']
+              args:
+                - '--out=experimental-prometheus-rw'
+                - '--tag=testid=daily-performance'
+                - '--tag=environment=dev'
+                - '/scripts/basic-load-test.js'
+              ports:
+                - containerPort: 6565
+                  name: metrics
+              volumeMounts:
+                - name: test-scripts
+                  mountPath: /scripts
+              resources:
+                requests:
+                  cpu: 200m
+                  memory: 256Mi
+                limits:
+                  cpu: 500m
+                  memory: 512Mi
+              env:
+                - name: K6_PROMETHEUS_RW_SERVER_URL
+                  value: 'http://monitoring-kube-prometheus-prometheus.dev-system:80/api/v1/write'
+                - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+                  value: 'false'
+          volumes:
+            - name: test-scripts
+              configMap:
+                name: k6-test-scripts
+
+---
+# 스트레스 테스트 Job (수동 실행용)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-stress-test
+  labels:
+    app: k6-load-test
+    test-type: stress
+spec:
+  ttlSecondsAfterFinished: 7200 # 2시간 후 정리
+  template:
+    metadata:
+      labels:
+        app: k6-load-test
+        test-type: stress
+    spec:
+      serviceAccountName: k6-runner
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command: ['k6', 'run']
+          args:
+            - '--out=experimental-prometheus-rw'
+            - '--tag=testid=stress-test'
+            - '/scripts/stress-test.js'
+          volumeMounts:
+            - name: test-scripts
+              mountPath: /scripts
+          resources:
+            requests:
+              cpu: 500m # 스트레스 테스트는 더 많은 리소스 필요
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          env:
+            - name: K6_PROMETHEUS_RW_SERVER_URL
+              value: 'http://monitoring-kube-prometheus-prometheus.dev-system.svc.cluster.local:80/api/v1/write'
+            - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+              value: 'false'
+
+      volumes:
+        - name: test-scripts
+          configMap:
+            name: k6-test-scripts
+
+---
+# 주간 스트레스 테스트 CronJob (매주 일요일 오전 3시)
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: k6-weekly-stress-test
+  labels:
+    app: k6-load-test
+    schedule-type: weekly
+spec:
+  schedule: '0 3 * * 0' # 매주 일요일 오전 3시
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 1
+  concurrencyPolicy: Forbid
+  jobTemplate:
+    spec:
+      ttlSecondsAfterFinished: 86400
+      template:
+        spec:
+          serviceAccountName: k6-runner
+          restartPolicy: Never
+          containers:
+            - name: k6
+              image: grafana/k6:latest
+              command: ['k6', 'run']
+              args:
+                - '--out=experimental-prometheus-rw'
+                - '--tag=testid=weekly-stress'
+                - '--tag=environment=dev'
+                - '/scripts/stress-test.js'
+              volumeMounts:
+                - name: test-scripts
+                  mountPath: /scripts
+              resources:
+                requests:
+                  cpu: 500m
+                  memory: 512Mi
+                limits:
+                  cpu: 1000m
+                  memory: 1Gi
+              env:
+                - name: K6_PROMETHEUS_RW_SERVER_URL
+                  value: 'http://monitoring-kube-prometheus-prometheus.dev-system:80/api/v1/write'
+                - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+                  value: 'false'
+          volumes:
+            - name: test-scripts
+              configMap:
+                name: k6-test-scripts
+
+---
+# 스파이크 테스트 Job (배포 후 자동 실행용)
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: k6-spike-test
+  labels:
+    app: k6-load-test
+    test-type: spike
+spec:
+  ttlSecondsAfterFinished: 3600
+  template:
+    spec:
+      serviceAccountName: k6-runner
+      restartPolicy: Never
+      containers:
+        - name: k6
+          image: grafana/k6:latest
+          command: ['k6', 'run']
+          args:
+            - '--out=experimental-prometheus-rw'
+            - '--tag=testid=spike-test'
+            - '/scripts/spike-test.js'
+          volumeMounts:
+            - name: test-scripts
+              mountPath: /scripts
+          resources:
+            requests:
+              cpu: 300m
+              memory: 256Mi
+            limits:
+              cpu: 800m
+              memory: 512Mi
+          env:
+            - name: K6_PROMETHEUS_RW_SERVER_URL
+              value: 'http://monitoring-kube-prometheus-prometheus.dev-system.svc.cluster.local:80/api/v1/write'
+            - name: K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM
+              value: 'false'
+      volumes:
+        - name: test-scripts
+          configMap:
+            name: k6-test-scripts

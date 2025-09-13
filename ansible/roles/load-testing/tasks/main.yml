@@ -1,0 +1,306 @@
+---
+# Load Testing Role with k6
+# 클러스터 내부에서 실행되는 부하 테스트 시스템
+
+- name: Clean up existing k6 Jobs before deployment
+  kubernetes.core.k8s:
+    state: absent
+    api_version: batch/v1
+    kind: Job
+    namespace: '{{ dev_namespace }}'
+    label_selectors:
+      - app=k6-load-test
+  ignore_errors: true
+
+- name: Wait for Job cleanup to complete
+  pause:
+    seconds: 5
+
+- name: Create k6 test scripts ConfigMap
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: ConfigMap
+      metadata:
+        name: k6-test-scripts
+        namespace: '{{ dev_namespace }}'
+      data:
+        basic-load-test.js: |
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+          import { Counter, Rate, Trend } from 'k6/metrics';
+
+          // 커스텀 메트릭 정의 (Prometheus 연동)
+          const customErrorRate = new Rate('custom_error_rate');
+          const customResponseTime = new Trend('custom_response_time');
+          const apiCalls = new Counter('api_calls_total');
+
+          export let options = {
+            scenarios: {
+              // 기본 성능 테스트: 점진적 증가
+              ramp_up_test: {
+                executor: 'ramping-vus',
+                startVUs: 1,
+                stages: [
+                  { duration: '2m', target: 10 },   // 2분 동안 10명까지 증가
+                  { duration: '5m', target: 10 },   // 5분 동안 10명 유지
+                  { duration: '2m', target: 50 },   // 2분 동안 50명까지 증가
+                  { duration: '5m', target: 50 },   // 5분 동안 50명 유지
+                  { duration: '2m', target: 0 },    // 2분 동안 0명까지 감소
+                ],
+                gracefulRampDown: '30s',
+              }
+            },
+            thresholds: {
+              http_req_duration: ['p(95)<200'],        // 95%가 200ms 미만
+              http_req_failed: ['rate<0.01'],          // 에러율 1% 미만
+              http_reqs: ['rate>10'],                  // 초당 10 요청 이상
+            }
+          };
+
+          export default function () {
+            const baseUrl = `http://backend.dev-system.svc.cluster.local:8080`;
+            
+            // API 호출 시나리오들
+            const scenarios = [
+              { name: 'health-check', url: `${baseUrl}/actuator/health`, weight: 30 },
+              { name: 'api-info', url: `${baseUrl}/actuator/info`, weight: 20 },
+              { name: 'metrics', url: `${baseUrl}/actuator/metrics`, weight: 15 },
+            ];
+            
+            // 가중치 기반 시나리오 선택
+            const random = Math.random() * 100;
+            let cumulativeWeight = 0;
+            let selectedScenario = scenarios[0];
+            
+            for (let scenario of scenarios) {
+              cumulativeWeight += scenario.weight;
+              if (random <= cumulativeWeight) {
+                selectedScenario = scenario;
+                break;
+              }
+            }
+            
+            // HTTP 요청 실행
+            const response = http.get(selectedScenario.url, {
+              headers: {
+                'User-Agent': 'k6-load-test',
+                'Accept': 'application/json',
+              },
+            });
+            
+            // 응답 검증
+            const success = check(response, {
+              'status is 200': (r) => r.status === 200,
+              'response time < 500ms': (r) => r.timings.duration < 500,
+              'response has body': (r) => r.body.length > 0,
+            });
+            
+            // 커스텀 메트릭 업데이트
+            customErrorRate.add(!success);
+            customResponseTime.add(response.timings.duration);
+            apiCalls.add(1, { endpoint: selectedScenario.name });
+            
+            sleep(1);
+          }
+
+        stress-test.js: |
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export let options = {
+            scenarios: {
+              // 스트레스 테스트: 급격한 부하 증가
+              stress_test: {
+                executor: 'ramping-vus',
+                startVUs: 1,
+                stages: [
+                  { duration: '1m', target: 50 },    // 1분 동안 50명
+                  { duration: '3m', target: 100 },   // 3분 동안 100명
+                  { duration: '3m', target: 200 },   // 3분 동안 200명 (스트레스)
+                  { duration: '1m', target: 0 },     // 1분 동안 감소
+                ],
+                gracefulRampDown: '30s',
+              }
+            },
+            thresholds: {
+              http_req_duration: ['p(95)<1000'],       // 스트레스 상황에서 1초 미만
+              http_req_failed: ['rate<0.05'],          // 에러율 5% 미만
+            }
+          };
+
+          export default function () {
+            const response = http.get('http://backend.dev-system.svc.cluster.local:8080/actuator/health');
+            check(response, {
+              'status is 200': (r) => r.status === 200,
+              'response time acceptable': (r) => r.timings.duration < 2000,
+            });
+            sleep(0.5);  // 더 높은 부하를 위해 짧은 대기
+          }
+
+        spike-test.js: |
+          import http from 'k6/http';
+          import { check } from 'k6';
+
+          export let options = {
+            scenarios: {
+              // 스파이크 테스트: 갑작스런 트래픽 급증
+              spike_test: {
+                executor: 'ramping-vus',
+                startVUs: 1,
+                stages: [
+                  { duration: '30s', target: 10 },    // 평상시 부하
+                  { duration: '30s', target: 500 },   // 급격한 증가 (스파이크)
+                  { duration: '2m', target: 500 },    // 스파이크 유지
+                  { duration: '30s', target: 10 },    // 평상시로 복귀
+                  { duration: '1m', target: 0 },      // 종료
+                ],
+                gracefulRampDown: '30s',
+              }
+            },
+            thresholds: {
+              http_req_failed: ['rate<0.1'],           // 스파이크 시 에러율 10% 미만
+            }
+          };
+
+          export default function () {
+            const response = http.get('http://backend.dev-system.svc.cluster.local:8080/actuator/health');
+            check(response, {
+              'status is not 500': (r) => r.status !== 500,  // 서버 에러가 아님
+            });
+          }
+
+        endurance-test.js: |
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export let options = {
+            scenarios: {
+              // 내구성 테스트: 장시간 지속
+              endurance_test: {
+                executor: 'constant-vus',
+                vus: 20,                             // 일정한 20명 사용자
+                duration: '30m',                     // 30분간 지속
+              }
+            },
+            thresholds: {
+              http_req_duration: ['p(95)<300'],       // 일관된 성능 유지
+              http_req_failed: ['rate<0.02'],         // 안정적인 에러율
+            }
+          };
+
+          export default function () {
+            const response = http.get('http://backend.dev-system.svc.cluster.local:8080/actuator/health');
+            check(response, {
+              'status is 200': (r) => r.status === 200,
+              'consistent performance': (r) => r.timings.duration < 500,
+            });
+            sleep(2);  // 적당한 간격으로 요청
+          }
+    state: present
+
+- name: Create k6 RBAC
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: ServiceAccount
+      metadata:
+        name: k6-runner
+        namespace: '{{ dev_namespace }}'
+    state: present
+
+- name: Create k6 Service for metrics
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: v1
+      kind: Service
+      metadata:
+        name: k6-metrics-service
+        namespace: '{{ dev_namespace }}'
+        labels:
+          app: k6-load-test
+        annotations:
+          prometheus.io/scrape: "true"
+          prometheus.io/port: "6565"
+          prometheus.io/path: "/metrics"
+      spec:
+        ports:
+        - name: metrics
+          port: 6565
+          targetPort: 6565
+          protocol: TCP
+        selector:
+          app: k6-load-test
+    state: present
+
+- name: Deploy k6 Job templates
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/k6-jobs.yml'
+    namespace: '{{ dev_namespace }}'
+
+- name: Deploy k6 ServiceMonitor and PrometheusRules
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/k6-servicemonitor.yml'
+    namespace: '{{ dev_namespace }}'
+
+- name: Create load testing documentation
+  copy:
+    dest: /tmp/load-testing-usage.md
+    content: |
+      # 🚀 k6 부하 테스트 사용법
+
+      ## 기본 실행 명령어
+
+      ```bash
+      # 기본 성능 테스트 실행
+      kubectl create job manual-basic-test --from=cronjob/k6-daily-performance-test -n dev-system
+
+      # 스트레스 테스트 실행
+      kubectl create job manual-stress-test --from=cronjob/k6-weekly-stress-test -n dev-system
+
+      # 테스트 로그 확인
+      kubectl logs -f job/manual-basic-test -n dev-system
+
+      # 실행 중인 테스트 확인
+      kubectl get jobs -n dev-system | grep k6
+
+      # 테스트 정리
+      kubectl delete job manual-basic-test -n dev-system
+      ```
+
+      ## Grafana 대시보드 접근
+      1. Grafana 접속 (ALB Internal Ingress 통해)
+      2. "Load-Testing" 폴더 → "k6 부하 테스트 대시보드" 선택
+      3. 실시간 테스트 결과 모니터링
+
+      ## 정기 실행 스케줄
+      - 매일 오전 2시: 기본 성능 테스트
+      - 매주 일요일 오전 3시: 스트레스 테스트
+
+- name: Display load testing information
+  debug:
+    msg:
+      - 'Load Testing 시스템이 구성되었습니다!'
+      - '📊 k6 기반 클러스터 내부 부하 테스트'
+      - '🎯 테스트 시나리오:'
+      - '   - basic-load-test.js: 기본 성능 (점진적 증가, 16분)'
+      - '   - stress-test.js: 스트레스 (고부하, 8분)'  
+      - '   - spike-test.js: 스파이크 (급증, 4분)'
+      - '   - endurance-test.js: 내구성 (30분 지속)'
+      - ''
+      - '🚀 수동 실행:'
+      - '   kubectl create job test-run --from=cronjob/k6-daily-performance-test -n {{ dev_namespace }}'
+      - '   kubectl logs -f job/test-run -n {{ dev_namespace }}'
+      - ''
+      - '📅 자동 실행:'
+      - '   - 매일 오전 2시: 기본 성능 테스트'
+      - '   - 매주 일요일 오전 3시: 스트레스 테스트'
+      - ''
+      - '📈 모니터링:'
+      - '   - Prometheus: k6 메트릭 자동 수집 ({{ dev_namespace }} 네임스페이스)'
+      - '   - Grafana: "Load-Testing" 폴더에서 대시보드 확인'
+      - '   - AlertManager: 성능 임계값 초과 시 알림'
+      - '   🔧 관리 편의성: 모든 개발 리소스를 {{ dev_namespace }}로 통합 관리'
+      - '   💰 비용 절약: 클러스터 내부 실행으로 네트워크 비용 $0'
