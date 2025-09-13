@@ -11,6 +11,10 @@ prometheus:
     port: 80
     targetPort: 9090
   prometheusSpec:
+    # Enable remote write receiver for k6 integration
+    enableRemoteWriteReceiver: true
+    enableFeatures:
+      - remote-write-receiver
     retention: 15d
     retentionSize: 10GB
     resources:
@@ -29,6 +33,85 @@ prometheus:
     podMonitorSelector: {}
     ruleNamespaceSelector: {}
     ruleSelector: {}
+    # 커스텀 알림 규칙 로딩
+    additionalPrometheusRulesMap:
+      eks-infrastructure-rules:
+        groups:
+          - name: infrastructure.critical
+            interval: 30s
+            rules:
+              - alert: NodeDown
+                expr: up{job="node-exporter"} == 0
+                for: 1m
+                labels:
+                  severity: critical
+                  category: infrastructure
+                  priority: P0
+                annotations:
+                  summary: 'EKS 노드가 다운되었습니다'
+                  description: '노드 {{ $labels.instance }}가 1분 이상 응답하지 않습니다.'
+
+              - alert: NodeMemoryCritical
+                expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+                for: 2m
+                labels:
+                  severity: critical
+                  category: infrastructure
+                  priority: P0
+                annotations:
+                  summary: '노드 메모리가 위험 수준입니다'
+                  description: '노드 {{ $labels.instance }}의 메모리 사용률이 {{ $value }}%입니다.'
+
+              - alert: NodeDiskSpaceCritical
+                expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90
+                for: 5m
+                labels:
+                  severity: critical
+                  category: infrastructure
+                  priority: P0
+                annotations:
+                  summary: '노드 디스크 공간이 부족합니다'
+                  description: '노드 {{ $labels.instance }}의 {{ $labels.mountpoint }} 사용률이 {{ $value }}%입니다.'
+
+          - name: application.critical
+            interval: 30s
+            rules:
+              - alert: PodCrashLooping
+                expr: rate(kube_pod_container_status_restarts_total[1h]) > 2
+                for: 5m
+                labels:
+                  severity: critical
+                  category: application
+                  priority: P1
+                annotations:
+                  summary: 'Pod가 크래시 루프 상태입니다'
+                  description: '{{ $labels.namespace }}/{{ $labels.pod }} Pod가 1시간에 2회 이상 재시작되고 있습니다.'
+
+          - name: resource.warning
+            interval: 60s
+            rules:
+              - alert: NodeCPUHigh
+                expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+                for: 10m
+                labels:
+                  severity: warning
+                  category: resource
+                  priority: P2
+                annotations:
+                  summary: '노드 CPU 사용률이 높습니다'
+                  description: '노드 {{ $labels.instance }}의 CPU 사용률이 {{ $value }}%입니다.'
+
+              - alert: NodeMemoryHigh
+                expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+                for: 10m
+                labels:
+                  severity: warning
+                  category: resource
+                  priority: P2
+                annotations:
+                  summary: '노드 메모리 사용률이 높습니다'
+                  description: '노드 {{ $labels.instance }}의 메모리 사용률이 {{ $value }}%입니다.'
+
     # Additional Scrape Configs for custom applications
     additionalScrapeConfigs:
       # Kafka JMX metrics (if exposed)
@@ -189,6 +272,7 @@ grafana:
 
 ## AlertManager Configuration
 alertmanager:
+  enabled: true
   service:
     port: 80
     targetPort: 9093
@@ -209,6 +293,111 @@ alertmanager:
         cpu: 100m
     # Storage disabled for temporary monitoring
     # storage: null
+
+    # AlertManager 설정 파일 로딩
+    configSecret: alertmanager-config
+
+    # 알림 보존 기간
+    retention: 120h
+
+    # 외부 URL (ALB 통해 접근 시)
+    externalUrl: http://alertmanager.dev-cluster.local
+
+  # AlertManager 설정 (ConfigMap으로 관리)
+  config:
+    global:
+      smtp_smarthost: 'localhost:587'
+      smtp_from: 'alerts@dev-cluster.local'
+      resolve_timeout: 5m
+
+    route:
+      group_by: ['alertname', 'cluster', 'service']
+      group_wait: 10s
+      group_interval: 5m
+      repeat_interval: 2h
+      receiver: 'web.hook.default'
+
+      routes:
+        # P0: 인프라 크리티컬 (즉시)
+        - match:
+            severity: critical
+            category: infrastructure
+          receiver: 'infrastructure-critical'
+          group_wait: 0s
+          repeat_interval: 5m
+
+        # P1: 애플리케이션 크리티컬
+        - match:
+            severity: critical
+            category: application
+          receiver: 'application-critical'
+          group_wait: 30s
+          repeat_interval: 10m
+
+        # P2: 리소스 경고
+        - match:
+            severity: warning
+            category: resource
+          receiver: 'resource-warning'
+          group_wait: 5m
+          repeat_interval: 1h
+
+    receivers:
+      # 기본 수신자 (웹훅)
+      - name: 'web.hook.default'
+        webhook_configs:
+          - url: 'http://localhost:5001/webhook'
+            send_resolved: true
+
+      # P0: 인프라 크리티컬 (Slack 알림)
+      - name: 'infrastructure-critical'
+        slack_configs:
+          - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+            channel: '#ops-critical'
+            username: 'AlertManager'
+            title: '🚨 [P0-CRITICAL] EKS 클러스터 인프라 장애'
+            text: |
+              *알림:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+              *클러스터:* {{ .GroupLabels.cluster }}
+              *시간:* {{ .CommonAnnotations.startsAt }}
+              *즉시 확인 필요* - 클러스터 가용성에 영향
+            send_resolved: true
+
+      # P1: 애플리케이션 크리티컬
+      - name: 'application-critical'
+        slack_configs:
+          - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+            channel: '#app-alerts'
+            username: 'AlertManager'
+            title: '⚠️ [P1-CRITICAL] 핵심 서비스 장애'
+            text: |
+              *서비스:* {{ .GroupLabels.service }}
+              *알림:* {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+              *대응:* 15분 이내 확인 필요
+            send_resolved: true
+
+      # P2: 리소스 경고
+      - name: 'resource-warning'
+        slack_configs:
+          - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+            channel: '#monitoring'
+            username: 'AlertManager'
+            title: '❗ [P2-WARNING] 리소스 임계값 경고'
+            text: |
+              *노드:* {{ .GroupLabels.instance }}
+              *메트릭:* {{ .GroupLabels.alertname }}
+              *권장:* 30분 이내 확인 및 스케일링 검토
+            send_resolved: true
+
+    # 억제 규칙 (중복 알림 방지)
+    inhibit_rules:
+      # 노드 다운 시 해당 노드의 다른 알림 억제
+      - source_match:
+          severity: 'critical'
+          alertname: 'NodeDown'
+        target_match:
+          severity: 'warning'
+        equal: ['instance']
 
 ## Node Exporter Configuration
 nodeExporter:

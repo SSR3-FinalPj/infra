@@ -1,0 +1,214 @@
+---
+# k6 ServiceMonitor for Prometheus
+# k6 부하 테스트 메트릭을 Prometheus에서 자동 수집
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: k6-load-test-monitor
+  labels:
+    app: k6-load-test
+    component: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: k6-load-test
+  endpoints:
+    - port: metrics
+      interval: 30s
+      path: /metrics
+      scheme: http
+      honorLabels: true
+      # k6 메트릭 특화 설정
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          regex: 'k6_.*'
+          targetLabel: __tmp_k6_metric
+          replacement: 'true'
+        # 네임스페이스 라벨 추가
+        - sourceLabels: [__meta_kubernetes_namespace]
+          targetLabel: kubernetes_namespace
+        # Pod 이름 라벨 추가
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: kubernetes_pod_name
+        # 테스트 타입 라벨 추가
+        - sourceLabels: [__meta_kubernetes_pod_label_test_type]
+          targetLabel: test_type
+          regex: (.+)
+          replacement: '${1}'
+
+---
+# k6 테스트 결과를 위한 PrometheusRule
+# 부하 테스트 관련 알림 규칙 정의
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: k6-load-test-rules
+  labels:
+    app: k6-load-test
+    component: monitoring
+spec:
+  groups:
+    - name: k6-load-test.rules
+      interval: 30s
+      rules:
+        # k6 테스트 실행 중인지 확인
+        - alert: K6LoadTestRunning
+          expr: k6_vus > 0
+          for: 1m
+          labels:
+            severity: info
+            category: load-test
+          annotations:
+            summary: 'k6 부하 테스트가 실행 중입니다'
+            description: '테스트 {{ $labels.testid }}가 {{ $value }}명의 가상 사용자로 실행 중입니다.'
+
+        # 응답시간 임계값 초과
+        - alert: K6HighResponseTime
+          expr: k6_http_req_duration{quantile="0.95"} > 500
+          for: 2m
+          labels:
+            severity: warning
+            category: performance
+          annotations:
+            summary: '응답시간이 임계값을 초과했습니다'
+            description: '95%ile 응답시간이 {{ $value }}ms로 500ms를 초과했습니다.'
+
+        # 에러율 임계값 초과
+        - alert: K6HighErrorRate
+          expr: (k6_http_req_failed / k6_http_reqs) * 100 > 5
+          for: 1m
+          labels:
+            severity: critical
+            category: reliability
+          annotations:
+            summary: '에러율이 임계값을 초과했습니다'
+            description: '에러율이 {{ $value }}%로 5%를 초과했습니다.'
+
+        # 처리량 급감 감지
+        - alert: K6LowThroughput
+          expr: rate(k6_http_reqs[1m]) < 10
+          for: 2m
+          labels:
+            severity: warning
+            category: performance
+          annotations:
+            summary: '처리량이 낮습니다'
+            description: '초당 요청 수가 {{ $value }}로 예상치보다 낮습니다.'
+
+---
+# Grafana Dashboard용 ConfigMap
+# k6 테스트 결과를 시각화하는 대시보드
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k6-dashboard-config
+  labels:
+    grafana_dashboard: '1'
+    grafana_folder: 'Load-Testing'
+data:
+  k6-dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "🚀 k6 부하 테스트 대시보드",
+        "tags": ["k6", "load-testing", "performance"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "📊 테스트 개요",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "k6_vus",
+                "legendFormat": "현재 가상 사용자 수"
+              }
+            ],
+            "fieldConfig": {
+              "defaults": {
+                "color": {"mode": "thresholds"},
+                "thresholds": {
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 50},
+                    {"color": "red", "value": 100}
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "title": "📈 초당 요청 수 (RPS)",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(k6_http_reqs[1m])",
+                "legendFormat": "RPS"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Requests/sec",
+                "min": 0
+              }
+            ]
+          },
+          {
+            "title": "⏱️ 응답 시간 분포",
+            "type": "graph", 
+            "targets": [
+              {
+                "expr": "k6_http_req_duration{quantile=\"0.50\"}",
+                "legendFormat": "50%ile"
+              },
+              {
+                "expr": "k6_http_req_duration{quantile=\"0.95\"}",
+                "legendFormat": "95%ile"
+              },
+              {
+                "expr": "k6_http_req_duration{quantile=\"0.99\"}",
+                "legendFormat": "99%ile"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Response Time (ms)",
+                "min": 0
+              }
+            ]
+          },
+          {
+            "title": "❌ 에러율",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "(rate(k6_http_req_failed[1m]) / rate(k6_http_reqs[1m])) * 100",
+                "legendFormat": "에러율 (%)"
+              }
+            ],
+            "yAxes": [
+              {
+                "label": "Error Rate (%)",
+                "min": 0,
+                "max": 100
+              }
+            ],
+            "alert": {
+              "conditions": [
+                {
+                  "query": {"params": ["A", "1m", "now"]},
+                  "reducer": {"params": [], "type": "last"},
+                  "evaluator": {"params": [5], "type": "gt"}
+                }
+              ],
+              "name": "High Error Rate"
+            }
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "10s"
+      }
+    }
