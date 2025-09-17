@@ -26,10 +26,6 @@
 
 배포하기 전에 반드시 **[SECURITY.md](SECURITY.md)** 문서를 참고하여 환경변수를 설정하세요:
 
-1. **Terraform 설정**: `cp terraform/terraform.tfvars.example terraform/terraform.tfvars`
-2. **Ansible 설정**: `cp ansible/.env.example ansible/.env`
-3. 실제 AWS 계정 정보와 강력한 패스워드로 수정
-
 ## 3. 배포 절차
 
 배포는 두 단계로 진행됩니다. 먼저 Terraform으로 AWS 인프라를 생성한 후, Ansible로 해당 인프라 위에 애플리케이션을 배포합니다.

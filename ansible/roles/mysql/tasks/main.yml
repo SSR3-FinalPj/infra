@@ -4,5 +4,5 @@
 - name: Deploy MySQL for Redmine
   kubernetes.core.k8s:
     state: present
-    src: 'templates/mysql.yaml'
+    src: 'templates/mysql.yaml.j2'
     namespace: '{{ dev_namespace }}'

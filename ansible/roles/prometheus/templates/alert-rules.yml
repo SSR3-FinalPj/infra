@@ -1,0 +1,253 @@
+# Prometheus Alert Rules for EKS Multi-Service Environment
+# 우리 클러스터 구성에 특화된 실무적 알림 규칙
+
+groups:
+  # ==================================================
+  # P0: 클러스터 인프라 크리티컬 알림
+  # ==================================================
+  - name: infrastructure.critical
+    interval: 30s
+    rules:
+      # 노드 다운 (가장 중요)
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+          priority: P0
+        annotations:
+          summary: "EKS 노드가 다운되었습니다"
+          description: "노드 {{ $labels.instance }}가 1분 이상 응답하지 않습니다. 즉시 확인이 필요합니다."
+      
+      # 노드 리소스 크리티컬 (OOM 위험)
+      - alert: NodeMemoryCritical
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 95
+        for: 2m
+        labels:
+          severity: critical
+          category: infrastructure
+          priority: P0
+        annotations:
+          summary: "노드 메모리가 위험 수준입니다"
+          description: "노드 {{ $labels.instance }}의 메모리 사용률이 {{ $value }}%입니다. OOM Kill 위험이 있습니다."
+      
+      # 파일시스템 가득참 (Pod 스케줄링 실패 위험)
+      - alert: NodeDiskSpaceCritical
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 90
+        for: 5m
+        labels:
+          severity: critical
+          category: infrastructure
+          priority: P0
+        annotations:
+          summary: "노드 디스크 공간이 부족합니다"
+          description: "노드 {{ $labels.instance }}의 {{ $labels.mountpoint }} 디스크 사용률이 {{ $value }}%입니다."
+
+      # Kubernetes API 서버 응답 없음
+      - alert: KubernetesAPIServerDown
+        expr: up{job="apiserver"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+          priority: P0
+        annotations:
+          summary: "Kubernetes API 서버가 다운되었습니다"
+          description: "클러스터 API 서버에 접근할 수 없습니다. 모든 kubectl 명령이 실패할 수 있습니다."
+
+  # ==================================================
+  # P1: 핵심 애플리케이션 서비스 크리티컬
+  # ==================================================
+  - name: application.critical
+    interval: 30s
+    rules:
+      # Kafka 클러스터 다운
+      - alert: KafkaClusterDown
+        expr: up{job="kafka"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: application
+          service: kafka
+          priority: P1
+        annotations:
+          summary: "Kafka 클러스터가 다운되었습니다"
+          description: "Kafka 브로커 {{ $labels.instance }}가 다운되어 스트리밍 서비스에 영향이 있습니다."
+      
+      # PostgreSQL 데이터베이스 다운 (Airflow 의존성)
+      - alert: PostgreSQLDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: application
+          service: postgresql
+          priority: P1
+        annotations:
+          summary: "PostgreSQL 데이터베이스가 다운되었습니다"
+          description: "PostgreSQL {{ $labels.instance }}가 다운되어 Airflow 및 기타 서비스에 영향이 있습니다."
+      
+      # Redis 캐시 서버 다운
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: application
+          service: redis
+          priority: P1
+        annotations:
+          summary: "Redis 캐시 서버가 다운되었습니다"
+          description: "Redis {{ $labels.instance }}가 다운되어 캐싱 서비스에 영향이 있습니다."
+
+      # Elasticsearch 클러스터 다운
+      - alert: ElasticsearchClusterDown
+        expr: up{job="elasticsearch"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: application
+          service: elasticsearch
+          priority: P1
+        annotations:
+          summary: "Elasticsearch 클러스터가 다운되었습니다"
+          description: "Elasticsearch 노드 {{ $labels.instance }}가 다운되어 검색 및 로그 분석에 영향이 있습니다."
+
+      # Pod 재시작 빈발 (애플리케이션 불안정)
+      - alert: PodFrequentRestarts
+        expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
+        for: 5m
+        labels:
+          severity: critical
+          category: application
+          priority: P1
+        annotations:
+          summary: "Pod가 빈번하게 재시작되고 있습니다"
+          description: "{{ $labels.namespace }}/{{ $labels.pod }} Pod가 지난 1시간 동안 {{ $value }}회 재시작되었습니다."
+
+  # ==================================================
+  # P2: 리소스 임계값 경고
+  # ==================================================
+  - name: resource.warning
+    interval: 60s
+    rules:
+      # 노드 CPU 사용률 높음
+      - alert: NodeCPUHigh
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 10m
+        labels:
+          severity: warning
+          category: resource
+          priority: P2
+        annotations:
+          summary: "노드 CPU 사용률이 높습니다"
+          description: "노드 {{ $labels.instance }}의 CPU 사용률이 지난 10분간 {{ $value }}% 이상입니다."
+
+      # 노드 메모리 사용률 높음
+      - alert: NodeMemoryHigh
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 10m
+        labels:
+          severity: warning
+          category: resource
+          priority: P2
+        annotations:
+          summary: "노드 메모리 사용률이 높습니다"
+          description: "노드 {{ $labels.instance }}의 메모리 사용률이 {{ $value }}%입니다. 스케일링을 고려하세요."
+
+      # 디스크 사용률 높음
+      - alert: NodeDiskSpaceHigh
+        expr: (1 - (node_filesystem_avail_bytes{fstype!="tmpfs"} / node_filesystem_size_bytes{fstype!="tmpfs"})) * 100 > 80
+        for: 15m
+        labels:
+          severity: warning
+          category: resource
+          priority: P2
+        annotations:
+          summary: "노드 디스크 사용률이 높습니다"
+          description: "노드 {{ $labels.instance }}의 {{ $labels.mountpoint }} 디스크 사용률이 {{ $value }}%입니다."
+
+      # Pod CPU 요청 대비 사용량 높음
+      - alert: PodCPUThrottling
+        expr: rate(container_cpu_cfs_throttled_seconds_total[5m]) > 0.01
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+          priority: P2
+        annotations:
+          summary: "Pod CPU가 쓰로틀링되고 있습니다"
+          description: "{{ $labels.namespace }}/{{ $labels.pod }}의 CPU가 제한에 의해 쓰로틀링되고 있습니다."
+
+  # ==================================================
+  # P3: 성능 및 용량 계획 정보
+  # ==================================================
+  - name: performance.info
+    interval: 300s  # 5분 간격
+    rules:
+      # 시스템 로드 평균 높음
+      - alert: NodeLoadAverage15High
+        expr: node_load15 / on(instance) group_left() count(node_cpu_seconds_total{mode='idle'}) by (instance) > 1.5
+        for: 30m
+        labels:
+          severity: info
+          category: performance
+          priority: P3
+        annotations:
+          summary: "노드 15분 평균 로드가 높습니다"
+          description: "노드 {{ $labels.instance }}의 15분 평균 로드가 CPU 코어 수의 1.5배를 30분간 넘었습니다."
+
+      # 네트워크 에러 발생
+      - alert: NodeNetworkErrors
+        expr: increase(node_network_receive_errs_total[5m]) + increase(node_network_transmit_errs_total[5m]) > 10
+        for: 15m
+        labels:
+          severity: info
+          category: performance
+          priority: P3
+        annotations:
+          summary: "네트워크 에러가 발생하고 있습니다"
+          description: "노드 {{ $labels.instance }}에서 지난 5분간 {{ $value }}개의 네트워크 에러가 발생했습니다."
+
+      # 클러스터 전체 Pod 밀도 높음 (용량 계획용)
+      - alert: ClusterPodDensityHigh
+        expr: (sum(kube_pod_info) / sum(kube_node_status_allocatable{resource="pods"})) * 100 > 70
+        for: 1h
+        labels:
+          severity: info
+          category: performance
+          priority: P3
+        annotations:
+          summary: "클러스터 Pod 밀도가 높습니다"
+          description: "전체 클러스터의 Pod 밀도가 {{ $value }}%입니다. 노드 추가를 고려하세요."
+
+  # ==================================================
+  # EKS/VPC CNI 특화 알림
+  # ==================================================
+  - name: eks.specific
+    interval: 60s
+    rules:
+      # VPC CNI IP 부족 (EKS 특화)
+      - alert: VPCCNIIPAddressShortage
+        expr: (aws_cni_assigned_ip_addresses / aws_cni_total_ip_addresses) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          category: resource
+          priority: P2
+        annotations:
+          summary: "VPC CNI IP 주소가 부족합니다"
+          description: "노드 {{ $labels.node }}에서 사용 가능한 IP 주소가 부족합니다. Pod 스케줄링이 실패할 수 있습니다."
+
+      # ENI 할당 에러 (EKS 특화)
+      - alert: VPCCNIENIAllocationError
+        expr: increase(aws_cni_eni_allocation_errors_total[5m]) > 0
+        for: 1m
+        labels:
+          severity: critical
+          category: infrastructure
+          priority: P1
+        annotations:
+          summary: "VPC CNI ENI 할당 에러가 발생했습니다"
+          description: "노드 {{ $labels.node }}에서 ENI 할당 에러가 발생했습니다. 네트워크 연결에 문제가 있을 수 있습니다."

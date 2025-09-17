@@ -30,6 +30,77 @@
   changed_when: false
   failed_when: false
 
+- name: Check monitoring release status for any in-progress state
+  command: helm status monitoring -n '{{ dev_namespace }}'
+  register: helm_status_result
+  changed_when: false
+  failed_when: false
+  # helm list 결과와 관계없이 monitoring 릴리스가 존재하면 무조건 상태를 확인하도록 변경
+  when: "'monitoring' in helm_list_result.stdout"
+
+- name: Force rollback for any stuck states
+  command: helm rollback monitoring -n '{{ dev_namespace }}' --wait --timeout 300s
+  when:
+    - "'monitoring' in helm_list_result.stdout"
+    - helm_status_result.rc != 0 or 'pending' in helm_status_result.stdout or 'failed' in helm_status_result.stdout
+  ignore_errors: true
+
+- name: Force delete stuck Helm secrets if rollback fails
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Secret
+    namespace: '{{ dev_namespace }}'
+    state: absent
+    label_selectors:
+      - 'owner=helm'
+      - 'name=monitoring'
+  ignore_errors: true
+  when:
+    - "'monitoring' in helm_list_result.stdout"
+    # rollback 태스크가 실패했을 경우에만 실행하도록 조건 추가
+
+- name: Wait after cleanup
+  pause:
+    seconds: 15
+  when:
+    - "'monitoring' in helm_list_result.stdout"
+
+- name: Handle stuck pending-upgrade state
+  command: helm rollback monitoring 1 -n '{{ dev_namespace }}'
+  when:
+    - "'monitoring' in helm_list_result.stdout"
+    - helm_status_result.rc == 0
+    - "'pending-upgrade' in helm_status_result.stdout"
+  ignore_errors: true
+
+- name: Wait for rollback to complete
+  pause:
+    seconds: 10
+  when:
+    - "'monitoring' in helm_list_result.stdout"
+    - helm_status_result.rc == 0
+    - "'pending-upgrade' in helm_status_result.stdout"
+
+- name: Force delete stuck Helm secrets (if still in progress)
+  kubernetes.core.k8s:
+    api_version: v1
+    kind: Secret
+    namespace: '{{ dev_namespace }}'
+    state: absent
+    label_selectors:
+      - 'owner=helm'
+      - 'name=monitoring'
+      - 'status=pending-upgrade'
+  ignore_errors: true
+  when:
+    - "'monitoring' in helm_list_result.stdout"
+
+- name: Wait after force cleanup
+  pause:
+    seconds: 5
+  when:
+    - "'monitoring' in helm_list_result.stdout"
+
 - name: Remove existing standalone Grafana (if exists)
   kubernetes.core.k8s:
     api_version: apps/v1
@@ -93,6 +164,19 @@
       --namespace='{{ dev_namespace }}' --overwrite
   ignore_errors: true
 
+- name: Create ConfigMap for k6 prometheus dashboard
+  shell: |
+    kubectl create configmap k6-prometheus-dashboard \
+      --from-file={{ role_path }}/templates/grafana-dashboards/k6-prometheus.json \
+      --namespace='{{ dev_namespace }}' \
+      --dry-run=client -o yaml | \
+      sed 's/k6-prometheus\.json/k6-prometheus.json/' | \
+      kubectl apply -f -
+    kubectl label configmap k6-prometheus-dashboard \
+      grafana_dashboard=1 grafana_folder="K6-Monitoring" \
+      --namespace='{{ dev_namespace }}' --overwrite
+  ignore_errors: true
+
 - name: Display monitoring access information
   debug:
     msg:
@@ -106,3 +190,11 @@
       - '🎯 대시보드 위치:'
       - '   - Kubernetes-Monitoring 폴더: EKS 노드 모니터링, Node Exporter'
       - '   - Application-Monitoring 폴더: 애플리케이션 개요, Redis, PostgreSQL'
+      - ''
+      - '🚨 AlertManager 설정:'
+      - '   - 실무 중심 4단계 알림 우선순위 (P0~P3) 구성'
+      - '   - Slack 채널별 알림 분류 (#ops-critical, #app-alerts, #monitoring)'
+      - '   - 지능형 억제 규칙으로 알림 피로도 방지'
+      - '   - EKS 특화 알림: 노드 다운, Pod 크래시, VPC CNI 에러'
+      - '   ⚙️ 설정 방법: ansible/roles/prometheus/templates/alertmanager-guide.md 참고'
+      - '   🔍 접근: ALB Internal Ingress → AlertManager UI'

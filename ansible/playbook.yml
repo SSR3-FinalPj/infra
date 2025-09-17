@@ -24,14 +24,12 @@
       tags: kibana
     - role: elastic-hq
       tags: elastic-hq
-    - role: mysql
-      tags: mysql
-    - role: redmine
-      tags: redmine
     - role: prometheus
       tags: prometheus
     - role: zipkin
       tags: zipkin
+    - role: load-testing
+      tags: load-testing
     - role: portainer
       tags: portainer
     - role: ingress
