@@ -326,7 +326,7 @@
           ✅ All application resources have been deleted
           ✅ All Helm charts have been uninstalled  
           ✅ All PVCs have been removed
-          ✅ Namespace '{{ dev_namespace }}' has been deleted
+          ✅ Namespace dev-system has been deleted
           ✅ Namespace prod-system has been deleted
 
           🎉 Your EKS cluster is now in a clean state!

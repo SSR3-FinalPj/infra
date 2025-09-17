@@ -167,7 +167,7 @@
 - name: Create ConfigMap for k6 prometheus dashboard
   shell: |
     kubectl create configmap k6-prometheus-dashboard \
-      --from-file={{ role_path }}/templates/grafana-dashboards/application-overview.json \
+      --from-file={{ role_path }}/templates/grafana-dashboards/k6-prometheus.json \
       --namespace='{{ dev_namespace }}' \
       --dry-run=client -o yaml | \
       sed 's/k6-prometheus\.json/k6-prometheus.json/' | \

@@ -23,3 +23,10 @@ spec:
                 name: backend
                 port:
                   number: 8080
+          - path: /api/reddit/callback
+            pathType: Exact
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 8080
