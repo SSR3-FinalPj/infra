@@ -1,0 +1,175 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis-sentinel
+  labels:
+    component: redis-sentinel
+spec:
+  serviceName: redis-sentinel-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      component: redis-sentinel
+  template:
+    metadata:
+      labels:
+        component: redis-sentinel
+    spec:
+      # Pod anti-affinity to ensure Sentinels are on different nodes
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                  - key: component
+                    operator: In
+                    values: ['redis-sentinel']
+              topologyKey: 'kubernetes.io/hostname'
+        # Distribute across all node groups
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: dspESType
+                    operator: In
+                    values: ['master', 'data1', 'data2']
+      initContainers:
+        - name: sentinel-config
+          image: redis:7-alpine
+          command:
+            - /bin/sh
+            - -c
+            - |
+              HOSTNAME=$(hostname)
+              INDEX=${HOSTNAME##*-}
+              echo "Configuring Sentinel ${HOSTNAME} (index: ${INDEX})"
+
+              # Wait for Redis master service to be ready
+              echo "Waiting for Redis master service to be ready..."
+              for i in $(seq 1 30); do
+                if getent hosts redis-master-cs > /dev/null 2>&1; then
+                  echo "Redis master service is ready!"
+                  break
+                fi
+                echo "Attempt $i/30: Redis master service not ready, waiting 2 seconds..."
+                sleep 2
+              done
+
+              # Test connectivity
+              if ! getent hosts redis-master-cs > /dev/null 2>&1; then
+                echo "ERROR: Redis master service still not ready after 60 seconds"
+                echo "Trying with FQDN..."
+                if ! getent hosts redis-master-cs.dev-system.svc.cluster.local > /dev/null 2>&1; then
+                  echo "ERROR: Redis master service not accessible even with FQDN"
+                  exit 1
+                fi
+                echo "FQDN works, continuing..."
+              fi
+
+              # Create sentinel config dynamically to ensure DNS resolution
+              echo "Creating dynamic Sentinel configuration..."
+
+              # Get Redis master IP address
+              REDIS_MASTER_IP=$(getent hosts redis-master-cs | awk '{print $1}')
+              if [[ -z "$REDIS_MASTER_IP" ]]; then
+                # Fallback to FQDN
+                REDIS_MASTER_IP=$(getent hosts redis-master-cs.dev-system.svc.cluster.local | awk '{print $1}')
+              fi
+
+              echo "Using Redis master IP: $REDIS_MASTER_IP"
+
+              # Create sentinel configuration using echo to avoid YAML conflicts
+              echo "# Sentinel configuration" > /etc/sentinel/sentinel.conf
+              echo "port 26379" >> /etc/sentinel/sentinel.conf
+              echo "bind 0.0.0.0" >> /etc/sentinel/sentinel.conf
+              echo "" >> /etc/sentinel/sentinel.conf
+              echo "# Monitor the Redis master (using IP to avoid DNS issues)" >> /etc/sentinel/sentinel.conf
+              echo "sentinel monitor mymaster $REDIS_MASTER_IP 6379 2" >> /etc/sentinel/sentinel.conf
+              echo "" >> /etc/sentinel/sentinel.conf
+              echo "# Timeouts and intervals" >> /etc/sentinel/sentinel.conf
+              echo "sentinel down-after-milliseconds mymaster 5000" >> /etc/sentinel/sentinel.conf
+              echo "sentinel parallel-syncs mymaster 1" >> /etc/sentinel/sentinel.conf
+              echo "sentinel failover-timeout mymaster 10000" >> /etc/sentinel/sentinel.conf
+              echo "" >> /etc/sentinel/sentinel.conf
+              echo "# Deny dangerous commands in Sentinel" >> /etc/sentinel/sentinel.conf
+              echo "sentinel deny-scripts-reconfig yes" >> /etc/sentinel/sentinel.conf
+              echo "" >> /etc/sentinel/sentinel.conf
+              echo "# Logging" >> /etc/sentinel/sentinel.conf
+              echo "logfile \"\"" >> /etc/sentinel/sentinel.conf
+              echo "loglevel notice" >> /etc/sentinel/sentinel.conf
+
+              # Set authentication if password is provided
+              if [[ -n "${REDIS_PASSWORD}" ]]; then
+                  echo "sentinel auth-pass mymaster ${REDIS_PASSWORD}" >> /etc/sentinel/sentinel.conf
+              fi
+
+              # Add unique Sentinel ID (40-character hex string required)
+              SENTINEL_ID=$(echo "${HOSTNAME}" | sha1sum | cut -c1-40)
+              echo "sentinel myid ${SENTINEL_ID}" >> /etc/sentinel/sentinel.conf
+
+              echo "Sentinel configuration completed for ${HOSTNAME}"
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+                  optional: true
+          volumeMounts:
+            - name: sentinel-config-dir
+              mountPath: /etc/sentinel
+            - name: redis-config-volume
+              mountPath: /redis-config
+      containers:
+        - name: sentinel
+          image: redis:7-alpine
+          command:
+            - redis-sentinel
+            - /etc/sentinel/sentinel.conf
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: redis-secret
+                  key: password
+                  optional: true
+            - name: TZ
+              value: Asia/Seoul
+          ports:
+            - containerPort: 26379
+              name: sentinel
+          volumeMounts:
+            - name: sentinel-config-dir
+              mountPath: /etc/sentinel
+            - name: redis-config-volume
+              mountPath: /redis-config
+            - name: timezone
+              mountPath: /etc/localtime
+              readOnly: true
+          livenessProbe:
+            tcpSocket:
+              port: 26379
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            tcpSocket:
+              port: 26379
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              memory: '128Mi'
+              cpu: '50m'
+            limits:
+              memory: '256Mi'
+              cpu: '200m'
+      volumes:
+        - name: redis-config-volume
+          configMap:
+            name: redis-config
+            defaultMode: 0755
+        - name: sentinel-config-dir
+          emptyDir: {}
+        - name: timezone
+          hostPath:
+            path: /etc/localtime

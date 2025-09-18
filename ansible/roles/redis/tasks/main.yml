@@ -1,20 +1,44 @@
 ---
-# roles/redis/tasks/main.yml
+# roles/redis/tasks/main.yml - Redis HA Configuration
 
-- name: Deploy Redis PVC
+- name: Deploy Redis ConfigMap
   kubernetes.core.k8s:
     state: present
-    src: 'templates/redis-pvc.yaml'
+    src: 'templates/redis-configmap.yaml.j2'
     namespace: '{{ dev_namespace }}'
 
-- name: Deploy Redis Service
+- name: Deploy Redis Master Service (existing - keeps compatibility)
   kubernetes.core.k8s:
     state: present
     src: 'templates/redis-master-cs.yaml'
+    namespace: '{{ dev_namespace }}'
+
+- name: Deploy Redis HA Services
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-ha-services.yaml'
     namespace: '{{ dev_namespace }}'
 
 - name: Deploy Redis Master
   kubernetes.core.k8s:
     state: present
     src: 'templates/redis-master.yaml'
+    namespace: '{{ dev_namespace }}'
+
+- name: Deploy Redis Replica 1
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-replica1.yaml.j2'
+    namespace: '{{ dev_namespace }}'
+
+- name: Deploy Redis Replica 2
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-replica2.yaml.j2'
+    namespace: '{{ dev_namespace }}'
+
+- name: Deploy Redis Sentinel
+  kubernetes.core.k8s:
+    state: present
+    src: 'templates/redis-sentinel.yaml'
     namespace: '{{ dev_namespace }}'

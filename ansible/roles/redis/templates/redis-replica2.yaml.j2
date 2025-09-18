@@ -1,26 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: redis-master
+  name: redis-replica2
   labels:
     component: redis
-    role: master
+    role: replica
 spec:
   replicas: 1
   selector:
     matchLabels:
       component: redis
-      role: master
+      role: replica
+      instance: redis-2
   template:
     metadata:
       labels:
         component: redis
-        role: master
-        instance: redis-0
+        role: replica
+        instance: redis-2
     spec:
-      # Place on master node group
+      # Place on data2 node group
       nodeSelector:
-        dspESType: master
+        dspESType: data2
       # Anti-affinity to avoid other Redis instances
       affinity:
         podAntiAffinity:
@@ -38,7 +39,7 @@ spec:
         - /bin/sh
         - -c
         - |
-          echo "Configuring Redis Master"
+          echo "Configuring Redis Replica 2"
 
           # Create config directory
           mkdir -p /etc/redis
@@ -52,10 +53,11 @@ spec:
               echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
           fi
 
-          # Master specific configuration
-          echo "replica-priority 100" >> /etc/redis/redis.conf
+          # Replica specific configuration
+          echo "replicaof redis-master-cs 6379" >> /etc/redis/redis.conf
+          echo "replica-priority 90" >> /etc/redis/redis.conf
 
-          echo "Starting Redis Master"
+          echo "Starting Redis Replica 2"
           exec redis-server /etc/redis/redis.conf
         env:
         - name: REDIS_PASSWORD
@@ -103,7 +105,7 @@ spec:
           defaultMode: 0755
       - name: redis-data
         persistentVolumeClaim:
-          claimName: redis-master-pvc
+          claimName: redis-replica2-data
       - name: timezone
         hostPath:
           path: /etc/localtime

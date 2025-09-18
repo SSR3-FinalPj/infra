@@ -1,0 +1,124 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+  labels:
+    component: redis
+data:
+  # Redis Master/Slave Configuration
+  redis.conf: |
+    # Network settings
+    bind 0.0.0.0
+    port 6379
+    protected-mode no
+
+    # Persistence settings
+    save 900 1
+    save 300 10
+    save 60 10000
+    dir /data
+    dbfilename dump.rdb
+
+    # Memory and performance
+    maxmemory-policy allkeys-lru
+    tcp-keepalive 300
+    timeout 0
+
+    # Logging
+    loglevel notice
+    logfile ""
+
+    # Security
+    # requirepass will be set via environment variable
+
+    # Replication settings (for slaves)
+    # masterauth will be set via environment variable
+    replica-serve-stale-data yes
+    replica-read-only yes
+    repl-diskless-sync no
+    repl-diskless-sync-delay 5
+
+    # Append only file settings
+    appendonly yes
+    appendfsync everysec
+    no-appendfsync-on-rewrite no
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+
+  # Redis Sentinel Configuration
+  sentinel.conf: |
+    # Sentinel configuration
+    port 26379
+    bind 0.0.0.0
+
+    # Monitor the Redis master
+    # sentinel monitor <master-name> <ip> <port> <quorum>
+    sentinel monitor mymaster redis-master-cs 6379 2
+
+    # Authentication
+    # sentinel auth-pass mymaster <password>
+
+    # Timeouts and intervals
+    sentinel down-after-milliseconds mymaster 5000
+    sentinel parallel-syncs mymaster 1
+    sentinel failover-timeout mymaster 10000
+
+    # Deny dangerous commands in Sentinel
+    sentinel deny-scripts-reconfig yes
+
+    # Logging
+    logfile ""
+    loglevel notice
+
+  # Init script for Redis instances
+  init-redis.sh: |
+    #!/bin/bash
+    set -e
+
+    # Get Redis instance details
+    HOSTNAME=$(hostname)
+    INDEX=${HOSTNAME##*-}
+
+    echo "Starting Redis initialization for ${HOSTNAME} (index: ${INDEX})"
+
+    # Copy base config
+    cp /redis-config/redis.conf /etc/redis/redis.conf
+
+    # Set authentication if password is provided
+    if [[ -n "${REDIS_PASSWORD}" ]]; then
+        echo "requirepass ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
+        echo "masterauth ${REDIS_PASSWORD}" >> /etc/redis/redis.conf
+    fi
+
+    # Configure as master (redis-0) or replica
+    if [[ "${INDEX}" == "0" ]]; then
+        echo "Configuring as Redis Master"
+        echo "replica-priority 100" >> /etc/redis/redis.conf
+    else
+        echo "Configuring as Redis Replica"
+        echo "replicaof redis-0.redis-headless.{{ dev_namespace }}.svc.cluster.local 6379" >> /etc/redis/redis.conf
+        echo "replica-priority 90" >> /etc/redis/redis.conf
+    fi
+
+    echo "Redis configuration completed"
+    exec redis-server /etc/redis/redis.conf
+
+  # Init script for Sentinel instances
+  init-sentinel.sh: |
+    #!/bin/bash
+    set -e
+
+    HOSTNAME=$(hostname)
+    echo "Starting Sentinel initialization for ${HOSTNAME}"
+
+    # Copy base config
+    cp /redis-config/sentinel.conf /etc/sentinel/sentinel.conf
+
+    # Set authentication if password is provided
+    if [[ -n "${REDIS_PASSWORD}" ]]; then
+        echo "sentinel auth-pass mymaster ${REDIS_PASSWORD}" >> /etc/sentinel/sentinel.conf
+    fi
+
+    # Start sentinel
+    echo "Starting Redis Sentinel"
+    exec redis-sentinel /etc/sentinel/sentinel.conf
