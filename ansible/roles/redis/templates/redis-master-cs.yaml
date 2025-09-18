@@ -6,7 +6,8 @@ metadata:
     component: redis-master
 spec:
   selector:
-    component: redis-master
+    component: redis
+    role: master
   ports:
     - protocol: 'TCP'
       port: 6379
