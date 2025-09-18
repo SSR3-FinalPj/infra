@@ -35,7 +35,7 @@
 1.  **Terraform 작업 디렉토리로 이동합니다.**
 
     ```bash
-    cd refactored/terraform
+    cd terraform
     ```
 
 2.  **Terraform을 초기화합니다.**
@@ -68,21 +68,21 @@
     Ansible에서 변수로 사용하기 위해, `terraform` 디렉토리에서 다음 명령을 실행하여 출력 값을 JSON 파일로 저장합니다.
 
     ```bash
-    # (현재 위치: refactored/terraform)
+    # (현재 위치: terraform/)
     terraform output -json > ../ansible/terraform_outputs.json
     ```
 
 2.  **Ansible 작업 디렉토리로 이동합니다.**
 
     ```bash
-    # (현재 위치: refactored/terraform)
+    # (현재 위치: terraform/)
     cd ../ansible
     ```
 
 3.  **Ansible 플레이북을 실행하여 애플리케이션을 배포합니다.**
     `--extra-vars` 옵션을 사용하여 방금 생성한 JSON 파일의 내용을 변수로 전달합니다.
     ```bash
-    # (현재 위치: refactored/ansible)
+    # (현재 위치: ansible/)
     ansible-playbook playbook.yml --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
     ```
     플레이북이 실행되면서 `csi-drivers` Role부터 `ingress` Role까지 정의된 순서대로 모든 애플리케이션이 클러스터에 배포됩니다.
@@ -188,4 +188,3 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
   - `roles/`: 각 애플리케이션별로 분리된 Role 디렉토리
   - `playbook.yml`: Role 실행 순서를 정의하는 메인 플레이북
   - `terraform_outputs.json`: Terraform에서 생성된 출력 값이 저장되는 파일 (Git에는 포함하지 않는 것을 권장)
-- **`temp_airflow/`**: 커스텀 Airflow 설정 및 DAG
