@@ -1,0 +1,2 @@
+# This file is kept for future StatefulSet approach reference
+# Currently using separate Deployment approach for better node placement control

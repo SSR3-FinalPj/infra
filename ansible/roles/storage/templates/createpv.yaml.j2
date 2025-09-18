@@ -74,6 +74,76 @@ spec:
     matchLabels:
       type: redis-master-pv
 ---
+# Redis Replica 1
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: redis-replica1-pv
+  labels:
+    type: redis-replica1-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: "{{ efs_file_system_id.value }}::{{ efs_access_point_ids.value['fsap-redis-replica1'] }}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-replica1-data
+  namespace: '{{ dev_namespace }}'
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi
+  selector:
+    matchLabels:
+      type: redis-replica1-pv
+---
+# Redis Replica 2
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: redis-replica2-pv
+  labels:
+    type: redis-replica2-pv
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: efs-sc
+  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: "{{ efs_file_system_id.value }}::{{ efs_access_point_ids.value['fsap-redis-replica2'] }}"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-replica2-data
+  namespace: '{{ dev_namespace }}'
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: efs-sc
+  resources:
+    requests:
+      storage: 5Gi
+  selector:
+    matchLabels:
+      type: redis-replica2-pv
+---
 ######################################
 ###### For ElasticSearch master
 
