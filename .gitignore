@@ -102,7 +102,7 @@ temp_airflow/dags/__pycache__/
 temp_*
 *_LOG.md
 CLAUDE.md
-AGENT.md
+AGENTS.md
 **/guide.md
 
 # Any other custom sensitive files
