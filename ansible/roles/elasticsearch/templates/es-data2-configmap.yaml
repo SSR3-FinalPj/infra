@@ -6,11 +6,12 @@ data:
   elasticsearch.yml: |
     cluster.name: "elasticsearch"
     node.name: "elasticsearch-data2"
-    node.roles: [ data ]
+    node.roles: ["data", "ingest", "remote_cluster_client"]
     network.host: 0.0.0.0
     http.port: 9200
     transport.port: 9300
-    discovery.seed_hosts: ["elasticsearch-master-cs"]
+    discovery.seed_hosts: ["elasticsearch-master-cs", "elasticsearch-data1-cs", "elasticsearch-data2-cs"]
+    cluster.initial_master_nodes: ["elasticsearch-master"]
     xpack.security.enabled: false
   jvm.options: |
     -Xms1g

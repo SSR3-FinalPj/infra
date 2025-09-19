@@ -8,8 +8,8 @@
     namespace: '{{ dev_namespace }}'
   loop:
     - 'templates/es-master-configmap.yaml'
-    # - 'templates/es-data1-configmap.yaml'
-    # - 'templates/es-data2-configmap.yaml'
+    - 'templates/es-data1-configmap.yaml'
+    - 'templates/es-data2-configmap.yaml'
 
 - name: Deploy Elasticsearch Client Services
   kubernetes.core.k8s:
@@ -18,8 +18,8 @@
     namespace: '{{ dev_namespace }}'
   loop:
     - 'templates/es-master-cs.yaml'
-    # - 'templates/es-data1-cs.yaml'
-    # - 'templates/es-data2-cs.yaml'
+    - 'templates/es-data1-cs.yaml'
+    - 'templates/es-data2-cs.yaml'
 
 - name: Deploy Elasticsearch StatefulSets
   kubernetes.core.k8s:
@@ -28,5 +28,5 @@
     namespace: '{{ dev_namespace }}'
   loop:
     - 'templates/es-master.yaml'
-    # - 'templates/es-data1.yaml'
-    # - 'templates/es-data2.yaml'
+    - 'templates/es-data1.yaml'
+    - 'templates/es-data2.yaml'
