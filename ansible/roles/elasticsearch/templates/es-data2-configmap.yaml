@@ -6,7 +6,11 @@ data:
   elasticsearch.yml: |
     cluster.name: "elasticsearch"
     node.name: "elasticsearch-data2"
+<<<<<<< HEAD
     node.roles: ["data", "ingest", "remote_cluster_client"]
+=======
+    node.roles: ["data", "ingest"]
+>>>>>>> 8d75d9df8183ce0174a241ba075e9ca912864af8
     network.host: 0.0.0.0
     http.port: 9200
     transport.port: 9300
