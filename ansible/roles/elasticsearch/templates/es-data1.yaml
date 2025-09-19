@@ -1,11 +1,12 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: elasticsearch-data1
   labels:
     component: elasticsearch-data1
     role: data
 spec:
+  serviceName: elasticsearch-data1-cs
   selector:
     matchLabels:
       component: elasticsearch-data1

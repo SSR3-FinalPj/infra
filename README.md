@@ -92,11 +92,20 @@
 특정 태그를 사용하여 개별 애플리케이션만 배포할 수 있습니다:
 
 ```bash
+# 고가용성 Redis 클러스터만 배포
+ansible-playbook playbook.yml --tags "redis" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
+# 고가용성 Elasticsearch 클러스터만 배포
+ansible-playbook playbook.yml --tags "elasticsearch" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
 # Prometheus 모니터링 스택만 배포
 ansible-playbook playbook.yml --tags "prometheus" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
 
 # Kafka와 Zookeeper만 배포
 ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
+
+# 분석 스택 (Elasticsearch + Kibana) 함께 배포
+ansible-playbook playbook.yml --tags "elasticsearch,kibana" --extra-vars "@terraform_outputs.json" --vault-password-file .vault_pass
 ```
 
 ## 4. 리소스 삭제 절차
@@ -143,13 +152,20 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
 8. **Airflow**: 워크플로우 오케스트레이션 (커스텀 DAG 포함)
 9. **Adminer**: 데이터베이스 관리 도구
 
-### 🚀 **캐싱 레이어**
+### 🚀 **캐싱 레이어** (고가용성)
 
-10. **Redis**: 인메모리 캐시 (Sentinel 구성)
+10. **Redis HA 클러스터**: 고가용성 인메모리 캐시
+    - **Redis Master**: 메인 캐시 서버 (ng-master 노드)
+    - **Redis Replicas**: 2개 복제본 (ng-data1, ng-data2 노드)
+    - **Redis Sentinels**: 3개 감시 노드 (자동 장애조치, Quorum=2)
 
-### 📊 **분석 레이어**
+### 📊 **분석 레이어** (고가용성)
 
-11. **Elasticsearch**: 검색 및 분석 엔진
+11. **Elasticsearch HA 클러스터**: 고가용성 검색 및 분석 엔진
+    - **Elasticsearch Master**: 클러스터 관리 + 데이터 저장 (ng-master 노드)
+    - **Elasticsearch Data1**: 데이터 노드 (ng-data1 노드)
+    - **Elasticsearch Data2**: 데이터 노드 (ng-data2 노드)
+    - **샤드 분산**: Primary 및 Replica 샤드 자동 분산으로 고가용성 보장
 12. **Kibana**: 데이터 시각화 도구
 13. **Elastic-HQ**: Elasticsearch 클러스터 관리
 
@@ -174,6 +190,11 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
 
 17. **Redmine**: 프로젝트 관리 도구
 
+### 🧪 **개발 및 테스트**
+
+18. **Zipkin**: 분산 트레이싱 시스템
+19. **Load Testing**: 성능 테스트 도구
+
 ### 📝 **모니터링 접근 정보**
 
 - **Grafana**: ALB Internal Ingress를 통해 접근 가능
@@ -183,8 +204,20 @@ ansible-playbook playbook.yml --tags "kafka,zookeeper" --extra-vars "@terraform_
 ## 6. 프로젝트 구조
 
 - **`terraform/`**: 모든 AWS 인프라(VPC, EKS, EFS, IAM, Addons) 정의
+
+  - `main.tf`: 진입점 및 provider 설정
+  - `vpc.tf`: VPC 및 네트워크 인프라 (10.0.0.0/16, 3 AZ)
+  - `eks_cluster.tf`: EKS 클러스터 및 IAM 역할
+  - `efs.tf`: EFS 파일 시스템 + 애플리케이션별 Access Points
+  - `variables.tf`: 설정 변수 (AWS 계정, 리전, 클러스터명)
+  - `outputs.tf`: Ansible로 전달할 출력값
+
 - **`ansible/`**: 모든 Kubernetes 리소스(애플리케이션) 배포 정의
+
   - `inventory/`: Ansible이 대상으로 할 서버 목록 (현재는 `localhost`)
-  - `roles/`: 각 애플리케이션별로 분리된 Role 디렉토리
+  - `roles/`: 각 애플리케이션별로 분리된 Role 디렉토리 (19개 역할)
   - `playbook.yml`: Role 실행 순서를 정의하는 메인 플레이북
   - `terraform_outputs.json`: Terraform에서 생성된 출력 값이 저장되는 파일 (Git에는 포함하지 않는 것을 권장)
+  - `group_vars/all/`: 글로벌 변수 및 Vault 설정
+
+- **`scripts/`**: 유틸리티 스크립트
