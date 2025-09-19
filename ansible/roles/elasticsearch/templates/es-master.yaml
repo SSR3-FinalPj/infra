@@ -1,11 +1,12 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: elasticsearch-master
   labels:
     component: elasticsearch
     role: master
 spec:
+  serviceName: elasticsearch-master-cs
   selector:
     matchLabels:
       app: elasticsearch-master
