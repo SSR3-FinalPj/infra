@@ -36,6 +36,14 @@ locals {
       path = "/redis-master",
       uid = 0, gid = 0, perms = "0755"
     },
+    "fsap-redis-replica1" = {
+      path = "/redis-replica1",
+      uid = 0, gid = 0, perms = "0755"
+    },
+    "fsap-redis-replica2" = {
+      path = "/redis-replica2",
+      uid = 0, gid = 0, perms = "0755"
+    },
     "fsap-es-master-config" = {
       path = "/es-master/config",
       uid = 1000, gid = 1000, perms = "0755"
