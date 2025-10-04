@@ -1,185 +1,189 @@
-# 보안 설정 가이드 (Security Configuration Guide)
+[English](./SECURITY.md) | [한국어](./SECURITY.ko.md) | [日本語](./SECURITY.ja.md)
 
-이 문서는 프로젝트의 민감한 정보를 **Ansible Vault**와 **Terraform tfvars**를 사용하여 안전하게 관리하는 방법을 설명합니다.
+---
 
-## 🔒 보안 원칙
+# Security Configuration Guide
 
-1. **민감한 정보는 절대 Git에 커밋하지 않습니다**
-2. **Ansible Vault로 암호화된 보안 관리를 사용합니다**
-3. **환경별로 분리된 설정 파일을 사용합니다**
-4. **실무 Best Practice를 준수합니다**
+This document explains how to securely manage sensitive project information using **Ansible Vault** and **Terraform tfvars**.
 
-## 📁 파일 구조
+## 🔒 Security Principles
+
+1.  **Never commit sensitive information to Git.**
+2.  **Use encrypted security management with Ansible Vault.**
+3.  **Use separate configuration files for each environment.**
+4.  **Adhere to industry best practices.**
+
+## 📁 File Structure
 
 ```
 refactored/
-├── .gitignore                           # 민감한 파일들 제외
+├── .gitignore                           # Exclude sensitive files
 ├── terraform/
-│   ├── terraform.tfvars                 # Terraform 실제 값 (Git 제외)
-│   └── terraform.tfvars.example         # Terraform 템플릿 (Git 포함)
+│   ├── terraform.tfvars                 # Terraform actual values (Git excluded)
+│   └── terraform.tfvars.example         # Terraform template (Git included)
 └── ansible/
-    ├── .vault_pass                      # Vault 패스워드 파일 (Git 제외)
+    ├── .vault_pass                      # Vault password file (Git excluded)
     └── group_vars/all/
-        ├── vars.yml                     # 공개 가능한 변수 (Git 포함)
-        ├── vault.yml                    # 암호화된 민감 정보 (Git 포함)
-        └── vault.yml.example            # Vault 템플릿 (Git 포함)
+        ├── vars.yml                     # Publicly available variables (Git included)
+        ├── vault.yml                    # Encrypted sensitive information (Git included)
+        └── vault.yml.example            # Vault template (Git included)
 ```
 
-## 🚀 초기 설정
+## 🚀 Initial Setup
 
-### 1단계: Terraform 설정
+### Step 1: Terraform Configuration
 
 ```bash
-# Terraform 디렉토리로 이동
+# Navigate to the Terraform directory
 cd terraform
 
-# 템플릿 파일 복사
+# Copy the template file
 cp terraform.tfvars.example terraform.tfvars
 
-# 실제 값으로 수정
+# Modify with actual values
 vi terraform.tfvars
 ```
 
-**terraform.tfvars에서 수정해야 할 값들:**
+**Values to modify in `terraform.tfvars`:**
 
-- `YOUR_AWS_ACCOUNT_ID`: 실제 AWS 계정 ID (12자리)
-- `YOUR_USERNAME`: 실제 IAM 사용자명
+- `YOUR_AWS_ACCOUNT_ID`: Your actual AWS Account ID (12 digits)
+- `YOUR_USERNAME`: Your actual IAM username
 
-### 2단계: Ansible Vault 설정
+### Step 2: Ansible Vault Configuration
 
 ```bash
-# Ansible 디렉토리로 이동
+# Navigate to the Ansible directory
 cd ansible
 
-# Vault 패스워드 파일 생성
+# Create the Vault password file
 echo "your_vault_password" > .vault_pass
 chmod 600 .vault_pass
 
-# Vault 파일 설정
+# Set up the Vault file
 cp group_vars/all/vault.yml.example group_vars/all/vault.yml
 vi group_vars/all/vault.yml
 
-# Vault 파일 암호화 (중요!)
+# Encrypt the Vault file (Important!)
 ansible-vault encrypt group_vars/all/vault.yml --vault-password-file .vault_pass
 ```
 
-**group_vars/all/vault.yml에서 수정해야 할 값들:**
+**Values to modify in `group_vars/all/vault.yml`:**
 
-- 모든 패스워드들을 강력한 패스워드로 변경
-- API 키들을 실제 발급받은 키로 교체
-- 암호화 전에 실제 값들로 교체 필수!
+- Change all passwords to strong passwords.
+- Replace API keys with your actual issued keys.
+- It is essential to replace with actual values before encryption!
 
-## 🔐 Ansible Vault 사용법 (고급)
+## 🔐 How to Use Ansible Vault (Advanced)
 
-### Vault 파일 암호화
+### Encrypting a Vault File
 
 ```bash
 ansible-vault encrypt group_vars/all/vault.yml
 ```
 
-### Vault 파일 편집
+### Editing a Vault File
 
 ```bash
 ansible-vault edit group_vars/all/vault.yml --vault-password-file .vault_pass
 ```
 
-### Vault와 함께 플레이북 실행
+### Running a Playbook with Vault
 
 ```bash
-# 패스워드 프롬프트 방식
+# Password prompt method
 ansible-playbook playbook.yml --ask-vault-pass --extra-vars "@terraform_outputs.json"
 
-# 패스워드 파일 사용 (권장)
+# Using a password file (Recommended)
 ansible-playbook playbook.yml --vault-password-file .vault_pass --extra-vars "@terraform_outputs.json"
 
-# 특정 role만 실행
+# Running a specific role only
 ansible-playbook playbook.yml --tags "airflow" --vault-password-file .vault_pass --extra-vars "@terraform_outputs.json"
 ```
 
-## 🛠️ 배포 워크플로
+## 🛠️ Deployment Workflow
 
-### 전체 배포
+### Full Deployment
 
 ```bash
-# 1. Terraform으로 인프라 배포
+# 1. Deploy infrastructure with Terraform
 cd terraform
 terraform init
 terraform apply
 
-# 2. Terraform 출력값 저장
+# 2. Save Terraform output
 terraform output -json > ../ansible/terraform_outputs.json
 
-# 3. Ansible로 애플리케이션 배포 (Vault 사용)
+# 3. Deploy applications with Ansible (using Vault)
 cd ../ansible
 ansible-playbook playbook.yml --vault-password-file .vault_pass --extra-vars "@terraform_outputs.json"
 ```
 
-### 환경변수 우선순위
+### Variable Priority
 
-Ansible에서는 다음 우선순위로 변수를 읽습니다:
+Ansible reads variables in the following order of precedence:
 
-1. **환경변수** (`.env` 파일): `lookup('env', 'VARIABLE_NAME')`
-2. **Vault 변수** (암호화된 값): `vault_variable_name`
-3. **기본값**: 없음 (오류 발생)
+1.  **Environment Variables** (`.env` file): `lookup('env', 'VARIABLE_NAME')`
+2.  **Vault Variables** (encrypted values): `vault_variable_name`
+3.  **Default Value**: None (will cause an error)
 
-## ⚠️ 주의사항
+## ⚠️ Important Notes
 
 ### DO ✅
 
-- 템플릿 파일(`.example`)은 Git에 커밋
-- 강력한 패스워드 사용 (최소 12자, 특수문자 포함)
-- 정기적인 패스워드 변경
-- 프로덕션에서는 AWS Secrets Manager, HashiCorp Vault 등 사용
+- Commit template files (`.example`) to Git.
+- Use strong passwords (at least 12 characters, including special characters).
+- Change passwords regularly.
+- In production, use services like AWS Secrets Manager or HashiCorp Vault.
 
 ### DON'T ❌
 
-- 실제 설정 파일(`.tfvars`, `.env`)을 Git에 커밋
-- 약한 패스워드 사용 ('example', 'password123' 등)
-- 실제 API 키를 코드나 문서에 하드코딩
-- 팀원 간 Slack/이메일로 민감한 정보 공유
+- Commit actual configuration files (`.tfvars`, `.env`) to Git.
+- Use weak passwords ('example', 'password123', etc.).
+- Hardcode actual API keys in code or documents.
+- Share sensitive information via Slack/email with team members.
 
-## 🔍 Git 커밋 전 체크리스트
+## 🔍 Pre-Commit Checklist
 
-커밋하기 전에 반드시 확인하세요:
+Before committing, be sure to check the following:
 
 ```bash
-# 민감한 파일들이 제외되었는지 확인
+# Check if sensitive files are excluded
 git status
 
-# .gitignore가 제대로 동작하는지 확인
+# Check if .gitignore is working correctly
 git check-ignore terraform/terraform.tfvars
 git check-ignore ansible/.env
 
-# 민감한 정보가 포함된 파일이 없는지 확인
+# Check for any files containing sensitive information
 git diff --cached | grep -E "(password|secret|key|token|arn:aws:iam::[0-9]+)"
 ```
 
-## 🆘 문제 해결
+## 🆘 Troubleshooting
 
-### 문제: Terraform에서 변수 값이 없다고 오류
+### Problem: Terraform errors out with missing variable values.
 
-**해결책**: `terraform.tfvars` 파일이 존재하고 필수 변수들이 설정되었는지 확인
+**Solution**: Ensure the `terraform.tfvars` file exists and all required variables are set.
 
-### 문제: Ansible에서 변수를 찾을 수 없음
+### Problem: Ansible cannot find a variable.
 
-**해결책**: `.env` 파일이 `ansible/` 디렉토리에 있는지, 변수명이 정확한지 확인
+**Solution**: Check if the `.env` file is in the `ansible/` directory and that the variable name is correct.
 
-### 문제: API 키가 작동하지 않음
+### Problem: API key is not working.
 
-**해결책**:
+**Solution**:
 
-1. API 키가 유효한지 확인
-2. API 키 권한이 적절히 설정되었는지 확인
-3. Rate limiting이나 quota 제한이 있는지 확인
+1.  Verify that the API key is valid.
+2.  Ensure the API key has the appropriate permissions.
+3.  Check for any rate limiting or quota restrictions.
 
-## 📞 지원
+## 📞 Support
 
-문제가 발생하면 다음을 확인하세요:
+If you encounter problems, check the following:
 
-1. 이 문서의 설정 단계를 모두 완료했는지
-2. `.gitignore`에서 민감한 파일들이 제외되었는지
-3. 환경변수 파일의 문법이 올바른지
+1.  Have you completed all the setup steps in this document?
+2.  Are sensitive files excluded in `.gitignore`?
+3.  Is the syntax of your environment variable file correct?
 
 ---
 
-**⚠️ 중요**: 이 프로젝트의 보안은 사용자의 책임입니다. 민감한 정보 관리에 각별히 주의하세요!
+**⚠️ Important**: The security of this project is the user's responsibility. Please pay special attention to managing sensitive information!
